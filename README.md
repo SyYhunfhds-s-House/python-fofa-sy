@@ -12,11 +12,14 @@
     - util/, 工具模块
         - core.py, 核心出装, fofa查询
             - `query(logger, url: str, key: str, query_string: str, size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False,)`, 查询接口封装 (预留logger接口)
+        - cache.py, 缓存模块(封装cachetools)
+    
+    - basic/, 底层模块
         - etc.py, 杂项模块
             - `_format_query_dict()`, 将查询dict格式化为查询字符串
             - `_format_result_dict()`, 将返回的数据格式化为字典列表
             - `_check_query_dict()`, 检查查询字典的键是否为API子接口所支持的键, 否则抛出语法异常 `FofaSyntaxError`
-        - cache.py, 缓存模块(封装cachetools)
+            - `_`, 占位符, 预留国际化接口
         - exceptions.py, 自定义异常封装
 
     - factory.py, 工厂模块, 组装得到Fofa类
