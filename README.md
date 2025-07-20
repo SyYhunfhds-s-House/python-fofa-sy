@@ -3,19 +3,33 @@
 - main.py, 主程序入口
 - src/, 源代码目录
     - api/, API接口封装工具
-    - exception/, 异常模块
+        - search/, Fofa查询接口封装 (自带自定义异常, 下同)
+            - search.py, 查询接口封装 (对外公共函数均需预留logger接口)
+            - exceptions.py, 自定义异常封装 (解耦太过头了, 所以这里的异常库都会是同样的代码)
+
+        - stat/, Fofa统计聚合接口封装
+            - stat.py, 统计聚合接口封装
+            - exceptions.py, 自定义异常封装
+
+        - host/, Host聚合接口封装
+            - host.py, Host聚合接口封装
+            - exceptions.py, 自定义异常封装
+
     - util/, 工具模块
     - basic/, 底层模块
-        - logger.py, 日志模块(封装loguru和colorama)
+        - ~~logger.py, 日志模块(封装loguru)~~
         - cache.py, 缓存模块(封装cachetools)
         - etc.py, 杂项模块
-            - ...
+            - `_format_query_dict()`, 将被注册到Fofa主类中, 下同
+            - `_format_result_dict()`
 
     - factory.py, 工厂模块, 组装得到Fofa类
 
 - locales, 国际化文件
     - en_US, 英文
     - zh_CN, 中文
+- tests, 测试目录
+
 
 
 ## fofaAPI规划
@@ -25,8 +39,14 @@
             - `_api`, 私有字段，API接口地址, 默认值为`https://fofa.info/api/v1`, 可接受外部初始化
             - `_apikey`, 私有字段，API密钥, 必须接受外部初始化
             - `_query_api`, 私有字段，查询接口, 默认值为`/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
+                - `_query_url`, 私有字段，查询接口URL, 由`_api + _query_api`生成
+
             - `_stat_api`, 私有字段，统计聚合接口, 默认值为`/search/stats`, 如果`_api`不为官方API则该字段不会被使用
+                - `_stat_url`, 私有字段，统计聚合接口URL, 由`_api + _stat_api`生成
+
             - `_host_api`, 私有字段，Host聚合接口, 默认值为`/host/{host}`, 如果`_api`不为官方API则该字段不会被使用
+                - `_host_url`, 私有字段，Host聚合接口URL, 由`_api + _host_api.format(host=host)`生成
+
         - *API查询字段* :
             - *函数作用域字段* :
                 - `_query_dict`, 私有字段，查询字典, 可选接受外部初始化
@@ -56,9 +76,9 @@
         - 重写`__sub__()`, 特殊方法, 需要临时从查询结果中删除一个列时，使用`instance - deleted_column_header`的方式删除, 返回的是查询结果而非整个实例
         - 重写`__repr__()`, 特殊方法，返回值为`<host={host} server={server} ...>`
         - `to_formatted_text()`, 公共方法, 将查询结果格式化为文本并返回
-        - `to_csv()`, 公共方法, 将查询结果格式化为CSV并返回
-        - `to_json()`, 公共方法, 将查询结果格式化为JSON并返回`
-        - `to_xlsx()`, 公共方法, 将查询结果格式化为XLSX并返回
+        - `to_csv()`, 公共方法, 将查询结果格式化为CSV并返回; 对应地会有`from_csv()`方法, 用于将CSV格式的字符串转换为查询结果字典
+        - `to_json()`, 公共方法, 将查询结果格式化为JSON并返回`; 对应地会有`from_json()`方法, 用于将JSON格式的字符串转换为查询结果字典
+        - `to_xlsx()`, 公共方法, 将查询结果格式化为XLSX并返回; 对应地会有`from_xlsx()`方法, 用于将XLSX格式的字符串转换为查询结果字典
         - *格式化数据后的公共方法*:
             - 根据`fields`中的字段，可以直接使用`instance.ip`的方式访问查询结果中的(IP地址)数据, 返回值类型为`pylist`
             - 根据`fields`中的字段，可以直接使用`instance['ip']`的方式访问查询结果中的(IP地址)数据, 返回值类型为`pylist`
@@ -73,6 +93,7 @@
     - *对接的FOFA的API子模块附属异常* : `Fofa.api.exception`
         - *API配置导致的异常* :
             - EmptyKeyError, 异常类, 当API密钥为空时抛出, 继承自ValueError
+            - NonOfficialAPIError, 异常类, 当使用的不是官方API但尝试使用官方接口时抛出, 继承自NotImplementedError
         - *API查询时可能有的异常* :
             - LowAllowmentWarning, 异常类, 当可用额度为1时抛出, 继承自Warning
             - EmptyAllowmentError, 异常类, 当可用额度为0时抛出, 继承自ValueError
@@ -81,3 +102,7 @@
             - QueryGrammarError, 异常类, 当查询语法错误时抛出, 继承自ValueError和FormatError
 
     - *utility套具子模块附属异常* : `Fofa.util.exception`
+
+***
+## 项目开源证书
+MIT License
