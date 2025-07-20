@@ -43,7 +43,7 @@ class Fofa:
     def search(self):
         pass
     
-    def stat(self):
+    def stats(self):
         pass
     
     def host(self):
@@ -58,8 +58,12 @@ class Fofa:
     def __add__(self, append_column_header: str):
         pass
     
-    # 重载减法
+    # 重载减法 # 有返回值
     def __sub__(self, existed_column_header: str):
+        pass
+    
+    # 无返回值
+    def __delete__(self, existed_column_header: str):
         pass
     
     def __repr__(self) -> str:

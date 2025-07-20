@@ -3,25 +3,21 @@
 - main.py, 主程序入口
 - src/, 源代码目录
     - api/, API接口封装工具
-        - search/, Fofa查询接口封装 (自带自定义异常, 下同)
-            - search.py, 查询接口封装 (对外公共函数均需预留logger接口)
-            - exceptions.py, 自定义异常封装 (解耦太过头了, 所以这里的异常库都会是同样的代码)
+        - search/, Fofa查询接口封装
 
-        - stat/, Fofa统计聚合接口封装
-            - stat.py, 统计聚合接口封装
-            - exceptions.py, 自定义异常封装
+        - stats/, Fofa统计聚合接口封装
 
         - host/, Host聚合接口封装
-            - host.py, Host聚合接口封装
-            - exceptions.py, 自定义异常封装
 
     - util/, 工具模块
-    - basic/, 底层模块
-        - ~~logger.py, 日志模块(封装loguru)~~
-        - cache.py, 缓存模块(封装cachetools)
+        - core.py, 核心出装, fofa查询
+            - `query(logger, url: str, key: str, query_string: str, size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False,)`, 查询接口封装 (预留logger接口)
         - etc.py, 杂项模块
-            - `_format_query_dict()`, 将被注册到Fofa主类中, 下同
-            - `_format_result_dict()`
+            - `_format_query_dict()`, 将查询dict格式化为查询字符串
+            - `_format_result_dict()`, 将返回的数据格式化为字典列表
+            - `_check_query_dict()`, 检查查询字典的键是否为API子接口所支持的键, 否则抛出语法异常 `FofaSyntaxError`
+        - cache.py, 缓存模块(封装cachetools)
+        - exceptions.py, 自定义异常封装
 
     - factory.py, 工厂模块, 组装得到Fofa类
 
@@ -73,6 +69,7 @@
         - 重写`__getattr__()`, 特殊方法, 若查询结果中包含`fields`中的字段，则可以直接使用`instance.field_name`的方式访问查询结果中的数据
         - 重写`__getitem__()`, 特殊方法, 若查询结果中包含`fields`中的字段，则可以直接使用`instance['field_name']`的方式访问查询结果中的数据
         - 重写`__add__()`, 特殊方法, 需要临时向查询结果中添加一个列时，使用`instance + appended_column_header`的方式添加, 返回的是查询结果而非整个实例
+        - 重写`__del__()`, 特殊方法, 若查询结果中包含`fields`中的字段，则可以直接使用`del instance.field_name`的方式删除查询结果中的数据( 直接删一个列包括里面的数据)
         - 重写`__sub__()`, 特殊方法, 需要临时从查询结果中删除一个列时，使用`instance - deleted_column_header`的方式删除, 返回的是查询结果而非整个实例
         - 重写`__repr__()`, 特殊方法，返回值为`<host={host} server={server} ...>`
         - `to_formatted_text()`, 公共方法, 将查询结果格式化为文本并返回
@@ -90,7 +87,7 @@
             - `_format_result_dict()`, 私有方法, 从返回的JSON数据中取出查询结果并格式化, 返回值为字典
 
 - Fofa.exception, 异常模块
-    - *对接的FOFA的API子模块附属异常* : `Fofa.api.exception`
+    - *对接的FOFA的API子模块附属异常* : `Fofa.api.exception`; 会自动加上`Fofa`前缀, 表示继承自对应的异常类
         - *API配置导致的异常* :
             - EmptyKeyError, 异常类, 当API密钥为空时抛出, 继承自ValueError
             - NonOfficialAPIError, 异常类, 当使用的不是官方API但尝试使用官方接口时抛出, 继承自NotImplementedError
@@ -99,7 +96,7 @@
             - EmptyAllowmentError, 异常类, 当可用额度为0时抛出, 继承自ValueError
             - EmptyResultsWarning, 异常类, 当查询结果为空时抛出, 继承自Warning
             - ConnectionError, 异常类, 当连接API时出错时抛出, 继承自httpx.ConnectionError或requets.ConnectionError
-            - QueryGrammarError, 异常类, 当查询语法错误时抛出, 继承自ValueError和FormatError
+            - SyntaxError, 异常类, 当查询语法错误时抛出, 继承自SyntaxError
 
     - *utility套具子模块附属异常* : `Fofa.util.exception`
 
