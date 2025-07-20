@@ -5,8 +5,9 @@ description = "Fofa引擎的Python接口 | A Python api for fofa assets-scan eng
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
-    "colorama>=0.4.6",
+    "agate>=1.13.0",
+    "cachetools>=5.5.2",
+    "loguru>=0.7.3",
     "pytest>=7.4.4",
-    "pyyaml>=6.0.1",
     "requests>=2.31.0",
 ]
