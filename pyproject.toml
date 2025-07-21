@@ -9,5 +9,6 @@ dependencies = [
     "cachetools>=5.5.2",
     "loguru>=0.7.3",
     "pytest>=7.4.4",
+    "pytest-mock>=3.11.1",
     "requests>=2.31.0",
 ]
