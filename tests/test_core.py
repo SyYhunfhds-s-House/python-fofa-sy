@@ -5,7 +5,7 @@ import requests
 
 import sys
 sys.path.append("F:\\CodeDev\\python-fofa-sy")
-from src.util.core import query
+from src.util.query import search as query
 from src.basic.exceptions import (
     FofaConnectionError, 
     FofaRequestFailed,

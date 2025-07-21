@@ -2,16 +2,19 @@
 ## 项目结构
 - main.py, 主程序入口
 - src/, 源代码目录
-    - api/, API接口封装工具
-        - search/, Fofa查询接口封装
-
-        - stats/, Fofa统计聚合接口封装
-
-        - host/, Host聚合接口封装
 
     - util/, 工具模块
-        - core.py, 核心出装, fofa查询
-            - `query(logger, url: str, key: str, query_string: str, size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False,)`, 查询接口封装 (预留logger接口)
+        - query.py, 核心出装, fofa查询
+            - `_fofa_get(
+            logger, translator, url: str, params: dict, timeout: int = 3
+            )`, 封装requests.get()方法, 用于查询接口的请求 (预留logger接口)
+            - `search(logger, url: str, key: str, query_string: str, size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False,)`, 查询接口封装 (预留logger接口)
+            - `stats(logger, translator, url: str,
+            key: str, query_string: str, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert']
+            )`, 统计聚合接口封装
+            - `host(logger, translator, url: str, key: str,
+            detail: bool = False # 是否显示端口详情
+            )`, Host聚合接口封装
         - cache.py, 缓存模块(封装cachetools)
     
     - basic/, 底层模块

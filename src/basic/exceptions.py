@@ -5,15 +5,15 @@ class FofaException(Exception):
     def __init__(self, message: str = "Fofa Exception", *args, **kwargs):
         super().__init__(_(message), *args, **kwargs)
 
-class FofaAPIException(Exception): # API 相关异常
+class FofaAPIException(FofaException): # API 相关异常
     def __init__(self, message: str = "Fofa API Exception", *args, **kwargs):
         super().__init__(message, *args, **kwargs)
         
-class FofaQueryException(Exception): # 查询相关异常
+class FofaQueryException(FofaException): # 查询相关异常
     def __init__(self, message: str = "Fofa Query Exception", *args, **kwargs):
         super().__init__(message, *args, **kwargs)
         
-class FofaUtilException(Exception): # 工具相关异常
+class FofaUtilException(FofaException): # 工具相关异常
     def __init__(self, message: str = "Fofa Utility tools Exception", *args, **kwargs):
         super().__init__(message, *args, **kwargs)
         
@@ -25,6 +25,10 @@ class EmptyKeyError(FofaAPIException):
 class NonOfficialKeyWarning(FofaAPIException):
     def __init__(self, message: str = "Using an unofficial key may prevent \
         some special interfaces from functioning properly", *args, **kwargs):
+        super().__init__(message, *args, **kwargs)
+# 权限不足异常
+class InsufficientPermissions(FofaAPIException):
+    def __init__(self, message: str = "Insufficient permissions", *args, **kwargs):
         super().__init__(message, *args, **kwargs)
 
 # 查询相关异常
