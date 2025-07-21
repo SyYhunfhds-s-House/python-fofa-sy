@@ -1,4 +1,4 @@
-from etc import _
+from .etc import _
 
 # 总封装
 class FofaException(Exception):
