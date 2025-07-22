@@ -61,7 +61,6 @@ def _format_query_fields_dict(
     # Example output: (title="百度")&&(domain="example.com")&&(port="80"||port="443")
     return query_string
 
-# TODO 基于agate或tablib函数编写返回值处理函数
 def _format_result_dict_beta(
     query_results: dict, # query函数导出的查询结果dict对象
     data_headers: dict = {
@@ -134,7 +133,6 @@ def _format_result_dict_beta(
     return methods[mode]()
 
 import tablib
-from typing import Literal
 
 # This is a placeholder for the actual function for context.
 # The docstring is the key part of this response.
@@ -145,9 +143,9 @@ def _format_result_dict(
         'stats': ['title'],
         'host': ['port', 'protocol', 'domain', 'category', 'product'],
     },
-    mode: Literal['search', 'stats', 'host'] = 'search',
+    mode: str = 'search',
     detail: bool = False,
-) -> tablib.Dataset | None:
+) -> tablib.Dataset:
     """Formats a raw FOFA API response dictionary into a tablib.Dataset.
 
     This function processes the dictionary returned from a FOFA API query and
