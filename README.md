@@ -1,9 +1,38 @@
---- 
+***
+# Python-Fofa-SY
+
+受Shodan官方API启发, 个人编写的一个第三方FOFA Python API
+
+***
+
+## 项目功能
+
+## 项目目前存在的问题
+
+### 潜在的BUG
+TODO 标记项目目前存在的问题
+- 项目依赖`tablib`库实现简单的数据格式化和处理功能, 但也使得返回值结构比较复杂的接口无法简单格式化, 因此, 未来有计划换回标准库`csv`库进行数据格式化处理, 并减轻项目依赖
+- 上下层接口的默认值不是基于引用拷贝连接的, 例如`Fofa`主类的`search`接口的默认传参就是直接从`src.util.etc`的`search`函数复制过来的, 这可能导致接口配置改动不能及时更新
+- 项目在Python 3.7的环境中开发, 由于未显式指定`proxies`参数为`None`, 因此在Python 3.7下运行本项目时会因为挂着梯子而无法正常访问API
+- 对官方API的响应仍然在测试中
+
+
+### 未实现的功能
+- TODO `stats`接口的返回值格式化未实现
+- TODO `host`接口的返回值格式化未实现
+
+### 未完成的功能
+TODO 标记项目未完成的功能
+- `Fofa`主类的`enable_xxx`配置项并没有完全启用
+- 查询接口没有显式指定`proxies`参数为None
+
+*** 
 ## 项目依赖
-- loguru, 著名日志库(可选)
+- loguru, 日志库(可选)
 - cachetools, 缓存库(可选)
 - typing-extensions, 类型注解库(向后兼容), 这样在Python 3.8及以下版本也可以使用`typing`模块中的类型注解
 - tablib, 表格数据处理库
+- tablib[all], tablib的拓展版, 支持导入导出多种格式 (可选)
 - requests, HTTP客户端
 
 ## 项目结构
@@ -67,15 +96,15 @@
 - Fofa, 主类
     - *API字段* (以单下划线开头的约定为私有字段; 无特殊注明的均为成员字段而非函数内定义的字段)
         - *API配置字段* :
-            - `_api`, 私有字段，API接口地址, 默认值为`https://fofa.info/api/v1`, 可接受外部初始化
+            - `_api`, 私有字段，API接口地址, 默认值为`https://fofa.info`, 可接受外部初始化
             - `_apikey`, 私有字段，API密钥, 必须接受外部初始化
-            - `_search_api`, 私有字段，查询接口, 默认值为`/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
+            - `_search_api`, 私有字段，查询接口, 默认值为`/api/v1/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
                 - `_search_url`, 私有字段，查询接口URL, 由`_api + _query_api`生成
 
-            - `_stat_api`, 私有字段，统计聚合接口, 默认值为`/search/stats`, 如果`_api`不为官方API则该字段不会被使用
+            - `_stat_api`, 私有字段，统计聚合接口, 默认值为`/api/v1/search/stats`, 如果`_api`不为官方API则该字段不会被使用
                 - `_stat_url`, 私有字段，统计聚合接口URL, 由`_api + _stat_api`生成
 
-            - `_host_api`, 私有字段，Host聚合接口, 默认值为`/host/{host}`, 如果`_api`不为官方API则该字段不会被使用
+            - `_host_api`, 私有字段，Host聚合接口, 默认值为`/api/v1/host/{host}`, 如果`_api`不为官方API则该字段不会被使用
                 - `_host_url`, 私有字段，Host聚合接口URL, 由`_api + _host_api.format(host=host)`生成
 
         - *API查询字段* :

@@ -140,7 +140,10 @@ def _format_result_dict(
     query_results: dict,
     data_headers: dict = {
         'search': {
-            'fofa': ['link', 'ip', 'port'], # FOFA官方API默认字段列表
+            'fofa': [
+                    'title', 'domain', 'link', 'unk1', 
+                    'cert.subject.org', 'unk2', 'unk3'
+                 ], # FOFA官方API默认字段列表
             # TODO 根据更多响应数据确认第三方API的真实返回字段
             'fofoapi': 
                 [

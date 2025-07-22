@@ -5,11 +5,9 @@
 try:
     from loguru import logger
     from cachetools import LRUCache, TTLCache, LFUCache
-    from typing_extensions import Literal, Optional, Any
+    # from typing_extensions import Literal, Optional, Any
 except ImportError:
     pass
-import stat
-from typing import Any
 import tablib
 
 # 导入自定义模块
@@ -19,14 +17,29 @@ from .basic import * # 导入异常类
 from .util import search, stats, host 
 
 # 定义全局常量
-_official_api = "https://fofa.info/api/v1" # 如果修改了api, 那么官方接口可能无法正常使用
+_official_api = "https://fofa.info" # 如果修改了api, 那么官方接口可能无法正常使用
+
+# 定义无用的空模块
+class FakeLogger:
+    def info(self, *args, **kwargs):
+        pass
+    def debug(self, *args, **kwargs):
+        pass
+    def warning(self, *args, **kwargs):
+        pass
+    def error(self, *args, **kwargs):
+        pass
+_fake_logger = FakeLogger() # 空的日志记录器, 这样下层调用时不会报错
 _apis = {
     'fofa': _official_api,
     'fofoapi': "https://fofoapi.com/api/v1",
 }
-_default_res_fields = { # 从etc.py拿的
+_default_res_fields = {
         'search': {
-            'fofa': ['link', 'ip', 'port'], # FOFA官方API默认字段列表
+            'fofa': [
+                    'title', 'domain', 'link', 'unk1', 
+                    'cert.subject.org', 'unk2', 'unk3'
+                 ], # FOFA官方API默认字段列表
             # TODO 根据更多响应数据确认第三方API的真实返回字段
             'fofoapi': 
                 [
@@ -36,7 +49,7 @@ _default_res_fields = { # 从etc.py拿的
         },
         'stats': ['title'],
         'host': ['port', 'protocol', 'domain', 'category', 'product'],
-}
+    }
 
 
 # 定义无用的空模块
@@ -57,11 +70,44 @@ class FakeCache:
 _fake_cache = FakeCache() # 空的缓存器
 
 class Fofa:
+    """A client for the FOFA API that also acts as a wrapper for query results.
+
+    This class simplifies interaction with the main FOFA API endpoints (`search`,
+    `stats`, `host`). After a successful query, the instance itself becomes a
+    proxy for the formatted results, allowing direct manipulation of the data
+    through magic methods as if it were a `tablib.Dataset`.
+
+    This dual functionality means you can perform a query and then immediately
+    work with the results using the same object. For example:
+    
+    ```python
+    fofa = Fofa(key="...")
+    fofa.search("domain=example.com")
+    print(len(fofa))          # Get number of results
+    print(fofa['ip'])         # Access a column (a list of IPs)
+    print(fofa.link)          # Access a column (a list of asset links)
+    del fofa['country_name']  # Remove a column
+    ```
+
+    This wrapper behavior is contingent on the `enable_format` flag being `True`
+    during initialization and a successful result formatting.
+
+    Attributes:
+        results (dict): The raw, unprocessed dictionary response from the most
+            recent API call.
+        assets (Optional[tablib.Dataset]): The formatted query results. This
+            is `None` if formatting is disabled (`enable_format=False`) or if
+            the formatting process for a given endpoint is not implemented or fails.
+        fields (list): The list of field names (headers) for the data in `assets`.
+    """
     def __init__(self,
                  # API配置
                  key: str, # API密钥
                  api: str = _official_api, # API地址 # 最后面不要带有斜杠
                  # 请求配置
+                 timeout: int = 30, # 超时时间
+                 headers: dict = None, # 请求头
+                 # proxy: dict = None, # 代理 # 暂时不支持
                  # proxy: dict = None, # 代理 # 暂时不支持
                  # 模块注册
                  enable_log: bool = True, # 是否启用日志
@@ -70,10 +116,26 @@ class Fofa:
                  enable_format: bool = False, # 是否启用自动数据整理
                  # 若不启用则无法使用后续的魔术方法重载效果
                  ) -> None:
+        """Initializes the Fofa API client.
+
+        Args:
+            key: The FOFA API key for authentication.
+            api: The base URL for the FOFA API. It should not have a
+                trailing slash. Defaults to the official FOFA API.
+            timeout: Default request timeout in seconds. Defaults to 30.
+            headers: Default custom HTTP headers to be sent with every request.
+            enable_log: If `True`, enables logging of errors and warnings.
+            log_engine: The logging engine to use if logging is enabled.
+                Defaults to the pre-configured logger.
+            enable_cache: (Not yet implemented) Flag to enable response caching.
+            enable_format: If `True`, automatically formats API responses into
+                `self.assets` and enables the magic method wrappers. If `False`,
+                `self.assets` will remain `None`.
+        """
         # 配置API链接
-        _search_api = '/search/all'
-        _stats_api = '/search/stats'
-        _host_api = '/host/{host}' # 预留format占位符
+        _search_api = '/api/v1/search/all'
+        _stats_api = '/api/v1/search/stats'
+        _host_api = '/api/v1/host/{host}' # 预留format占位符
         
         self._api = api.__str__() # 显式避免引用拷贝问题
         self._api_source = 'fofa' # 显式标记API来源
@@ -222,7 +284,7 @@ class Fofa:
         
         # 最后重新设置一下返回值字段
         self.fields = _default_res_fields['search'][self._api_source]
-            
+   
         return res # 返回的是原始的查询结果, 类型为dict
     
     # TODO 根据stats响应数据完善接口
@@ -420,6 +482,7 @@ class Fofa:
         # 删除数据表的某一列
         if self.assets is not None:
             del self.assets[existed_column_header]
+            self.fields.remove(existed_column_header)
         else:
             pass
         
@@ -437,6 +500,7 @@ class Fofa:
             self.assets.append_col(
                 [''] * len(self.assets), header=append_column_header
             )
+            self.fields.append(append_column_header)
         else:
             pass
         
