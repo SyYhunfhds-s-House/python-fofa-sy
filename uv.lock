@@ -392,7 +392,7 @@ wheels = [
 
 [[package]]
 name = "python-fofa-sy"
-version = "0.0.6"
+version = "0.0.6.0"
 source = { virtual = "." }
 dependencies = [
     { name = "cachetools", version = "5.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
@@ -409,6 +409,9 @@ dependencies = [
     { name = "tablib", version = "3.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8'" },
     { name = "tablib", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.8.*'" },
     { name = "tablib", version = "3.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "typing-extensions", version = "4.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8'" },
+    { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.8.*'" },
+    { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
 
 [package.metadata]
@@ -420,6 +423,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.31.0" },
     { name = "requests-mock", specifier = ">=1.12.1" },
     { name = "tablib", specifier = ">=3.4.0" },
+    { name = "typing-extensions", specifier = ">=4.7.1" },
 ]
 
 [[package]]

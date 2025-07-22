@@ -12,4 +12,5 @@ dependencies = [
     "requests>=2.31.0",
     "requests-mock>=1.12.1",
     "tablib>=3.4.0",
+    "typing-extensions>=4.7.1",
 ]
