@@ -15,12 +15,31 @@
             - `_fofa_get(
             logger, translator, url: str, params: dict, timeout: int = 3
             )`, 封装requests.get()方法, 用于查询接口的请求 (预留logger接口)
-            - `search(logger, url: str, key: str, query_string: str, size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False,)`, 查询接口封装 (预留logger接口)
-            - `stats(logger, translator, url: str,
-            key: str, query_string: str, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert']
+            - `search(logger, url: str, key: str, query_string: str, 
+            headers: dict = {}, cookies: dict = {}, timeout: int = 30,
+            size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False, 
+            threshold_remaining_queries: int = 1
+            )`, 查询接口封装 (预留logger接口)
+            - `stats(
+                logger, # 日志记录器
+                translator, # gettext国际化接口
+                url: str, # fofa查询接口(为了兼容不同接口和不同API)
+                apikey: str, # fofa密钥
+                query_string: str, # fofa查询字符串, 要没有base64编码的原始文本
+                fields: list = ['title', 'ip', 'host', 'port', 'os', 'server', 'icp'], # 返回值字段
+                headers: dict = {}, # 自定义请求头
+                cookies: dict = {}, # cookies
+                timeout: int = 30
             )`, 统计聚合接口封装
-            - `host(logger, translator, url: str, key: str,
-            detail: bool = False # 是否显示端口详情
+            - `host(
+                logger, # 日志记录器
+                translator, # gettext国际化接口
+                url: str, # fofa查询接口(为了兼容不同接口和不同API)
+                apikey: str, # fofa密钥
+                detail: bool = True, # 是否返回端口详情
+                headers: dict = {}, # 自定义请求头
+                cookies: dict = {}, # cookies
+                timeout: int = 30
             )`, Host聚合接口封装
         - cache.py, 缓存模块(封装cachetools)
     
@@ -50,8 +69,8 @@
         - *API配置字段* :
             - `_api`, 私有字段，API接口地址, 默认值为`https://fofa.info/api/v1`, 可接受外部初始化
             - `_apikey`, 私有字段，API密钥, 必须接受外部初始化
-            - `_query_api`, 私有字段，查询接口, 默认值为`/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
-                - `_query_url`, 私有字段，查询接口URL, 由`_api + _query_api`生成
+            - `_search_api`, 私有字段，查询接口, 默认值为`/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
+                - `_search_url`, 私有字段，查询接口URL, 由`_api + _query_api`生成
 
             - `_stat_api`, 私有字段，统计聚合接口, 默认值为`/search/stats`, 如果`_api`不为官方API则该字段不会被使用
                 - `_stat_url`, 私有字段，统计聚合接口URL, 由`_api + _stat_api`生成
@@ -74,7 +93,8 @@
             - `_enable_format`, 私有字段，是否启用自动格式化查询结果, 可选接受外部初始化(默认值为`True`)(使用`agate`实现)
         - *公共字段* :
             - `columns`, 查询结果字段, 类型为`pylist`, 包含查询结果的列名(即`_fields`)
-            - `results`, 查询结果, 类型为`pydict`, 包含查询结果的所有字段
+            - `results`, 查询结果, 类型为`pydict`, 包含查询结果的所有字段(FOFA查询返回的原始dict)
+            - `assets`, 格式化为`tablib.Dataset`的资产对象, 包含查询结果的列名和数据(即`_format_result_dict()`的返回值)
 
 
     - *API公共方法*
