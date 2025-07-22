@@ -1,4 +1,11 @@
 --- 
+## 项目依赖
+- loguru, 著名日志库(可选)
+- cachetools, 缓存库(可选)
+- typing-extensions, 类型注解库(向后兼容), 这样在Python 3.8及以下版本也可以使用`typing`模块中的类型注解
+- tablib, 表格数据处理库
+- requests, HTTP客户端
+
 ## 项目结构
 - main.py, 主程序入口
 - src/, 源代码目录
@@ -8,7 +15,11 @@
             - `_fofa_get(
             logger, translator, url: str, params: dict, timeout: int = 3
             )`, 封装requests.get()方法, 用于查询接口的请求 (预留logger接口)
-            - `search(logger, url: str, key: str, query_string: str, size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False,)`, 查询接口封装 (预留logger接口)
+            - `search(logger, url: str, key: str, query_string: str, 
+            headers: dict = {}, cookies: dict = {}, timeout: int = 30,
+            size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False, 
+            threshold_remaining_queries: int = 1
+            )`, 查询接口封装 (预留logger接口)
             - `stats(logger, translator, url: str,
             key: str, query_string: str, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert']
             )`, 统计聚合接口封装
@@ -20,8 +31,11 @@
     - basic/, 底层模块
         - etc.py, 杂项模块
             - `_format_query_dict()`, 将查询dict格式化为查询字符串
-            - `_format_result_dict()`, 将返回的数据格式化为字典列表
+            - `_format_result_dict()`, 将返回的数据格式化为`tablib.Dataset`对象
+                - **注意**: 只有search接口的返回值处理是可以使用的, 其他两个接口的返回值则由于返回值结果存在嵌套以及嵌套层级不一致, 故暂无法实现
             - `_check_query_dict()`, 检查查询字典的键是否为API子接口所支持的键, 否则抛出语法异常 `FofaSyntaxError`
+            - `ParamsMisconfiguredError`, 参数配置错误异常, 继承自`builtins.SyntaxError`, 当fields中存在当前接口不存在的字段时
+            会抛出, 这样就不会在请求时才遇到查询语法错误了
             - `_`, 占位符, 预留国际化接口
         - exceptions.py, 自定义异常封装
 
@@ -40,8 +54,8 @@
         - *API配置字段* :
             - `_api`, 私有字段，API接口地址, 默认值为`https://fofa.info/api/v1`, 可接受外部初始化
             - `_apikey`, 私有字段，API密钥, 必须接受外部初始化
-            - `_query_api`, 私有字段，查询接口, 默认值为`/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
-                - `_query_url`, 私有字段，查询接口URL, 由`_api + _query_api`生成
+            - `_search_api`, 私有字段，查询接口, 默认值为`/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
+                - `_search_url`, 私有字段，查询接口URL, 由`_api + _query_api`生成
 
             - `_stat_api`, 私有字段，统计聚合接口, 默认值为`/search/stats`, 如果`_api`不为官方API则该字段不会被使用
                 - `_stat_url`, 私有字段，统计聚合接口URL, 由`_api + _stat_api`生成
@@ -64,7 +78,8 @@
             - `_enable_format`, 私有字段，是否启用自动格式化查询结果, 可选接受外部初始化(默认值为`True`)(使用`agate`实现)
         - *公共字段* :
             - `columns`, 查询结果字段, 类型为`pylist`, 包含查询结果的列名(即`_fields`)
-            - `results`, 查询结果, 类型为`pydict`, 包含查询结果的所有字段
+            - `results`, 查询结果, 类型为`pydict`, 包含查询结果的所有字段(FOFA查询返回的原始dict)
+            - `assets`, 格式化为`tablib.Dataset`的资产对象, 包含查询结果的列名和数据(即`_format_result_dict()`的返回值)
 
 
     - *API公共方法*

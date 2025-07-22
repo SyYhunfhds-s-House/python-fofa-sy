@@ -188,7 +188,6 @@ def search(
         'page': page
     }
     
-    _ = translator # 换个名称
     result = _fofa_get(
         logger, translator, url,
         params, headers, cookies,

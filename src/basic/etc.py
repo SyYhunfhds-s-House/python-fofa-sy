@@ -61,7 +61,6 @@ def _format_query_fields_dict(
     # Example output: (title="百度")&&(domain="example.com")&&(port="80"||port="443")
     return query_string
 
-# TODO 基于agate或tablib函数编写返回值处理函数
 def _format_result_dict_beta(
     query_results: dict, # query函数导出的查询结果dict对象
     data_headers: dict = {
@@ -134,20 +133,28 @@ def _format_result_dict_beta(
     return methods[mode]()
 
 import tablib
-from typing import Literal
 
 # This is a placeholder for the actual function for context.
 # The docstring is the key part of this response.
 def _format_result_dict(
     query_results: dict,
     data_headers: dict = {
-        'search': ['link', 'ip', 'port'],
+        'search': {
+            'fofa': ['link', 'ip', 'port'], # FOFA官方API默认字段列表
+            # TODO 根据更多响应数据确认第三方API的真实返回字段
+            'fofoapi': 
+                [
+                    'title', 'domain', 'link', '???', 
+                    'cert.subject.org', '???', 'expanded_info'
+                 ] # fofoapi第三方API默认字段列表
+        },
         'stats': ['title'],
         'host': ['port', 'protocol', 'domain', 'category', 'product'],
     },
-    mode: Literal['search', 'stats', 'host'] = 'search',
+    mode: str = 'search',
+    api_source: str = 'fofa', # API来源, 用于区分是不是官方API
     detail: bool = False,
-) -> tablib.Dataset | None:
+) -> tablib.Dataset:
     """Formats a raw FOFA API response dictionary into a tablib.Dataset.
 
     This function processes the dictionary returned from a FOFA API query and
@@ -173,6 +180,9 @@ def _format_result_dict(
         detail (bool, optional): A special flag for the 'host' mode to handle
             detailed responses. This is currently not used as the 'host'
             formatter is not implemented. Defaults to False.
+        api_source (str, optional): The source of the API.
+            Defaults to 'fofa'. Could be one of 'fofa', 'fofoapi' or etc.
+
 
     Returns:
         A `tablib.Dataset` instance containing the formatted data if the mode
@@ -185,9 +195,11 @@ def _format_result_dict(
         """Formats the 'results' list from a search query."""
         data = tablib.Dataset()
         # Set the headers for the dataset using the provided mapping
-        data.headers = data_headers.get('search', [])
+        data.headers = data_headers['search'][api_source]
         # Append each row from the results list to the dataset
+        print(query_results['results'])
         for row in query_results.get('results', []):
+            # print(row)
             data.append(row)
         return data
 
