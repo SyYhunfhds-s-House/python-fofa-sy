@@ -61,7 +61,6 @@ def _format_query_fields_dict(
     # Example output: (title="百度")&&(domain="example.com")&&(port="80"||port="443")
     return query_string
 
-# TODO 基于agate或tablib函数编写返回值处理函数
 def _format_result_dict_beta(
     query_results: dict, # query函数导出的查询结果dict对象
     data_headers: dict = {

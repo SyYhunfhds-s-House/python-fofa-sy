@@ -20,8 +20,11 @@
     - basic/, 底层模块
         - etc.py, 杂项模块
             - `_format_query_dict()`, 将查询dict格式化为查询字符串
-            - `_format_result_dict()`, 将返回的数据格式化为字典列表
+            - `_format_result_dict()`, 将返回的数据格式化为`tablib.Dataset`对象
+                - **注意**: 只有search接口的返回值处理是可以使用的, 其他两个接口的返回值则由于返回值结果存在嵌套以及嵌套层级不一致, 故暂无法实现
             - `_check_query_dict()`, 检查查询字典的键是否为API子接口所支持的键, 否则抛出语法异常 `FofaSyntaxError`
+            - `ParamsMisconfiguredError`, 参数配置错误异常, 继承自`builtins.SyntaxError`, 当fields中存在当前接口不存在的字段时
+            会抛出, 这样就不会在请求时才遇到查询语法错误了
             - `_`, 占位符, 预留国际化接口
         - exceptions.py, 自定义异常封装
 
