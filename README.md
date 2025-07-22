@@ -20,11 +20,26 @@
             size: int = 10000, page: int = 1, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert'], full: bool = False, 
             threshold_remaining_queries: int = 1
             )`, 查询接口封装 (预留logger接口)
-            - `stats(logger, translator, url: str,
-            key: str, query_string: str, fields: list[str] = ['title', 'host', 'link', 'os', 'server', 'icp', 'cert']
+            - `stats(
+                logger, # 日志记录器
+                translator, # gettext国际化接口
+                url: str, # fofa查询接口(为了兼容不同接口和不同API)
+                apikey: str, # fofa密钥
+                query_string: str, # fofa查询字符串, 要没有base64编码的原始文本
+                fields: list = ['title', 'ip', 'host', 'port', 'os', 'server', 'icp'], # 返回值字段
+                headers: dict = {}, # 自定义请求头
+                cookies: dict = {}, # cookies
+                timeout: int = 30
             )`, 统计聚合接口封装
-            - `host(logger, translator, url: str, key: str,
-            detail: bool = False # 是否显示端口详情
+            - `host(
+                logger, # 日志记录器
+                translator, # gettext国际化接口
+                url: str, # fofa查询接口(为了兼容不同接口和不同API)
+                apikey: str, # fofa密钥
+                detail: bool = True, # 是否返回端口详情
+                headers: dict = {}, # 自定义请求头
+                cookies: dict = {}, # cookies
+                timeout: int = 30
             )`, Host聚合接口封装
         - cache.py, 缓存模块(封装cachetools)
     

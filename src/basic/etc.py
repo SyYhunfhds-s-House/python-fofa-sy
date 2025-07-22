@@ -144,8 +144,8 @@ def _format_result_dict(
             # TODO 根据更多响应数据确认第三方API的真实返回字段
             'fofoapi': 
                 [
-                    'title', 'domain', 'link', '???', 
-                    'cert.subject.org', '???', 'expanded_info'
+                    'title', 'domain', 'link', 'unk1', 
+                    'cert.subject.org', 'unk2', 'unk3'
                  ] # fofoapi第三方API默认字段列表
         },
         'stats': ['title'],
@@ -197,7 +197,6 @@ def _format_result_dict(
         # Set the headers for the dataset using the provided mapping
         data.headers = data_headers['search'][api_source]
         # Append each row from the results list to the dataset
-        print(query_results['results'])
         for row in query_results.get('results', []):
             # print(row)
             data.append(row)
