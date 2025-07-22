@@ -134,7 +134,6 @@ def _format_result_dict_beta(
     return methods[mode]()
 
 import tablib
-from typing import Literal
 
 # This is a placeholder for the actual function for context.
 # The docstring is the key part of this response.
@@ -145,9 +144,9 @@ def _format_result_dict(
         'stats': ['title'],
         'host': ['port', 'protocol', 'domain', 'category', 'product'],
     },
-    mode: Literal['search', 'stats', 'host'] = 'search',
+    mode: str = 'search',
     detail: bool = False,
-) -> tablib.Dataset | None:
+) -> tablib.Dataset:
     """Formats a raw FOFA API response dictionary into a tablib.Dataset.
 
     This function processes the dictionary returned from a FOFA API query and
