@@ -17,7 +17,7 @@ from .basic import * # 导入异常类
 from .util import search, stats, host 
 
 # 定义全局常量
-_official_api = "https://fofa.info/api/v1" # 如果修改了api, 那么官方接口可能无法正常使用
+_official_api = "https://fofa.info" # 如果修改了api, 那么官方接口可能无法正常使用
 
 # 定义无用的空模块
 class FakeLogger:
@@ -130,9 +130,9 @@ class Fofa:
                 `self.assets` will remain `None`.
         """
         # 配置API链接
-        _search_api = '/search/all'
-        _stats_api = '/search/stats'
-        _host_api = '/host/{host}' # 预留format占位符
+        _search_api = '/api/v1/search/all'
+        _stats_api = '/api/v1/search/stats'
+        _host_api = '/api/v1/host/{host}' # 预留format占位符
         
         self._api = api.__str__() # 显式避免引用拷贝问题
         self._api_source = 'fofa' # 显式标记API来源
@@ -170,27 +170,6 @@ class Fofa:
              **kwargs
              ):
         return Fofa(**kwargs)
-    
-    def _format_query_dict(self):
-        pass
-    
-    def _format_result_dict(self):
-        pass
-    
-    def search(self):
-        pass
-    
-    def stats(self):
-        pass
-    
-    def host(self):
-        pass
-    
-    def __getattribute__(self, name: str):
-        pass
-    
-    def __getitem__(self, name: str):
-        pass
     
     def search(self, 
                query_string: str,
