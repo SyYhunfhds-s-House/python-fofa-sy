@@ -69,7 +69,6 @@ def _format_result_dict_alpha(
                     'title', 'domain', 'link', 'unk1', 
                     'cert.subject.org', 'unk2', 'unk3'
                  ], # FOFA官方API默认字段列表
-            # TODO 根据更多响应数据确认第三方API的真实返回字段
             'fofoapi': 
                 [
                     'title', 'domain', 'link', 'unk1', 
@@ -168,7 +167,6 @@ def _format_result_dict(
                     'title', 'domain', 'link', 'unk1', 
                     'cert.subject.org', 'unk2', 'unk3'
                  ], # FOFA官方API默认字段列表
-            # TODO 根据更多响应数据确认第三方API的真实返回字段
             'fofoapi': 
                 [
                     'title', 'domain', 'link', 'unk1', 

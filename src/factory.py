@@ -10,8 +10,6 @@ except ImportError:
     pass
 import tablib
 
-from src.util import query
-
 # 导入自定义模块
 from .basic import _format_query_fields_dict, _format_result_dict, _check_query_fields_dict
 from .basic import _
@@ -34,7 +32,7 @@ class FakeLogger:
 _fake_logger = FakeLogger() # 空的日志记录器, 这样下层调用时不会报错
 _apis = {
     'fofa': _official_api,
-    'fofoapi': "https://fofoapi.com/api/v1",
+    'fofoapi': "https://fofoapi.com",
 }
 # 根据官方响应数据反推的格式
 _default_res_fields = {
@@ -79,9 +77,9 @@ class Fofa:
                  # API配置
                  key: str, # API密钥
                  api: str = _official_api, # API地址 # 最后面不要带有斜杠
-                 # 请求配置
-                 timeout: int = 30, # 超时时间
-                 headers: dict = None, # 请求头
+                 # 请求配置 # 底层接口写好了, 这里是一点都用不上的
+                 # timeout: int = 30, # 超时时间
+                 # headers: dict = None, # 请求头
                  # proxy: dict = None, # 代理 # 暂时不支持
                  # proxy: dict = None, # 代理 # 暂时不支持
                  # 模块注册
@@ -340,7 +338,6 @@ class Fofa:
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
-
         try:
             self.results = stats_v2(
                 apikey=self._apikey,
@@ -493,7 +490,6 @@ class FofaAssets:
     # 注册函数
     def _format_dict(self):
         # 对于search接口, 正常格式化即可
-
         def _format_search_dict():
             self.assets = tablib.Dataset()
             self.assets.headers = self.fields
