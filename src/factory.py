@@ -72,12 +72,42 @@ class FakeCache:
 _fake_cache = FakeCache() # 空的缓存器
 
 class Fofa:
+    """A client for the FOFA API that also acts as a wrapper for query results.
+
+    This class simplifies interaction with the main FOFA API endpoints (`search`,
+    `stats`, `host`). After a successful query, the instance itself becomes a
+    proxy for the formatted results, allowing direct manipulation of the data
+    through magic methods as if it were a `tablib.Dataset`.
+
+    This dual functionality means you can perform a query and then immediately
+    work with the results using the same object. For example:
+    
+    ```python
+    fofa = Fofa(key="...")
+    fofa.search("domain=example.com")
+    print(len(fofa))          # Get number of results
+    print(fofa['ip'])         # Access a column (a list of IPs)
+    print(fofa.link)          # Access a column (a list of asset links)
+    del fofa['country_name']  # Remove a column
+    ```
+
+    This wrapper behavior is contingent on the `enable_format` flag being `True`
+    during initialization and a successful result formatting.
+
+    Attributes:
+        results (dict): The raw, unprocessed dictionary response from the most
+            recent API call.
+        assets (Optional[tablib.Dataset]): The formatted query results. This
+            is `None` if formatting is disabled (`enable_format=False`) or if
+            the formatting process for a given endpoint is not implemented or fails.
+        fields (list): The list of field names (headers) for the data in `assets`.
+    """
     def __init__(self,
                  # API配置
                  key: str, # API密钥
                  api: str = _official_api, # API地址 # 最后面不要带有斜杠
                  # 请求配置
-                 timeout: int = 3, # 超时时间
+                 timeout: int = 30, # 超时时间
                  headers: dict = None, # 请求头
                  # proxy: dict = None, # 代理 # 暂时不支持
                  # proxy: dict = None, # 代理 # 暂时不支持
@@ -88,6 +118,22 @@ class Fofa:
                  enable_format: bool = False, # 是否启用自动数据整理
                  # 若不启用则无法使用后续的魔术方法重载效果
                  ) -> None:
+        """Initializes the Fofa API client.
+
+        Args:
+            key: The FOFA API key for authentication.
+            api: The base URL for the FOFA API. It should not have a
+                trailing slash. Defaults to the official FOFA API.
+            timeout: Default request timeout in seconds. Defaults to 30.
+            headers: Default custom HTTP headers to be sent with every request.
+            enable_log: If `True`, enables logging of errors and warnings.
+            log_engine: The logging engine to use if logging is enabled.
+                Defaults to the pre-configured logger.
+            enable_cache: (Not yet implemented) Flag to enable response caching.
+            enable_format: If `True`, automatically formats API responses into
+                `self.assets` and enables the magic method wrappers. If `False`,
+                `self.assets` will remain `None`.
+        """
         # 配置API链接
         _search_api = '/search/all'
         _stats_api = '/search/stats'

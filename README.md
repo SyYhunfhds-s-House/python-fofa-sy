@@ -1,4 +1,9 @@
---- 
+***
+# Python-Fofa-SY
+
+受Shodan官方API启发, 个人编写的一个第三方FOFA Python API
+
+*** 
 ## 项目依赖
 - loguru, 著名日志库(可选)
 - cachetools, 缓存库(可选)
