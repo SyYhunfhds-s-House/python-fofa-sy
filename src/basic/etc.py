@@ -225,7 +225,6 @@ def _format_result_dict(
         data.headers = data_headers['search'][api_source]
         # Append each row from the results list to the dataset
         for row in query_results.get('results', []):
-            # print(row)
             data.append(row)
         return data
 
