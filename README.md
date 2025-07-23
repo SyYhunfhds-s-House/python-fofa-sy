@@ -5,10 +5,11 @@
 
 *** 
 ## 项目依赖
-- loguru, 著名日志库(可选)
+- loguru, 日志库(可选)
 - cachetools, 缓存库(可选)
 - typing-extensions, 类型注解库(向后兼容), 这样在Python 3.8及以下版本也可以使用`typing`模块中的类型注解
 - tablib, 表格数据处理库
+- tablib[all], tablib的拓展版, 支持导入导出多种格式 (可选)
 - requests, HTTP客户端
 
 ## 项目结构

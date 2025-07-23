@@ -2,17 +2,12 @@
 # import gettext
 
 # 导入第三方依赖
-from loguru import logger
-from cachetools import LRUCache, TTLCache, LFUCache
-from typing_extensions import Literal, Optional, Any
 try:
     from loguru import logger
     from cachetools import LRUCache, TTLCache, LFUCache
-    from typing_extensions import Literal, Optional, Any
+    # from typing_extensions import Literal, Optional, Any
 except ImportError:
     pass
-import stat
-from typing import Any
 import tablib
 
 # 导入自定义模块
