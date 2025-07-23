@@ -61,78 +61,102 @@ def _format_query_fields_dict(
     # Example output: (title="百度")&&(domain="example.com")&&(port="80"||port="443")
     return query_string
 
-def _format_result_dict_beta(
-    query_results: dict, # query函数导出的查询结果dict对象
+def _format_result_dict_alpha(
+    query_results: dict,
     data_headers: dict = {
-        'search': ['link', 'ip', 'port'],
-        'stats': ['title'], 
+        'search': {
+            'fofa': [
+                    'title', 'domain', 'link', 'unk1', 
+                    'cert.subject.org', 'unk2', 'unk3'
+                 ], # FOFA官方API默认字段列表
+            # TODO 根据更多响应数据确认第三方API的真实返回字段
+            'fofoapi': 
+                [
+                    'title', 'domain', 'link', 'unk1', 
+                    'cert.subject.org', 'unk2', 'unk3'
+                 ] # fofoapi第三方API默认字段列表
+        },
+        'stats': ['title'],
         'host': ['port', 'protocol', 'domain', 'category', 'product'],
-        # host接口的返回值字段是无法在请求时指定的
-        # 在函数里也不会用到这一列名字段
-        }, # 要用哪个就指定哪个的值即可
-    # extra_headers: list = [], # stats等接口的返回值有多层dict，该参数就是用来指定内层dict的列名的
-    mode: str = 'search', # 对应查询接口的返回值
-    detail: bool = False, # host聚合接口的返回值的特殊处理
+    },
+    mode: str = 'search',
+    api_source: str = 'fofa', # API来源, 用于区分是不是官方API
+    detail: bool = False,
 ) -> tablib.Dataset:
-    # 将返回的数据格式化为tablib.Dataset格式; 如果不方便优化的则会返回None表示无法处理
-    # 开发环境的tablib是无扩展版的tablib，
-    # 如有导出格式需要，请自行更换成tablib[all]
-    
-    # 目前只有search接口的返回值处理是理论上正常使用的
-    # stats和host接口的返回值处理不好搞
-    def _format_search_result_dict():
-        data.headers = data_headers['search']
-        for row in query_results['results']:
+    """Formats a raw FOFA API response dictionary into a tablib.Dataset.
+
+    This function processes the dictionary returned from a FOFA API query and
+    converts it into a structured `tablib.Dataset` object for easier handling
+    and potential export. The processing logic is dispatched based on the `mode`
+    parameter, which corresponds to the type of FOFA API endpoint queried.
+
+    Note:
+        Currently, only the 'search' mode is fully implemented and functional.
+        The 'stats' and 'host' modes are not supported due to the complex,
+        nested structure of their respective API responses, and they will
+        raise an error , that is `NotImplementedError`.
+
+    Args:
+        query_results: The raw dictionary object parsed from the FOFA API's
+            JSON response.
+        data_headers (dict, optional): A dictionary mapping a mode to a list
+            of strings that will be used as the headers for the output Dataset.
+            Defaults are provided for all modes.
+        mode (str, optional): The type of API response to format. Determines
+            which internal formatting logic to use. Defaults to 'search'.
+            Must be one of 'search', 'stats', or 'host'.
+        detail (bool, optional): A special flag for the 'host' mode to handle
+            detailed responses. This is currently not used as the 'host'
+            formatter is not implemented. Defaults to False.
+        api_source (str, optional): The source of the API.
+            Defaults to 'fofa'. Could be one of 'fofa', 'fofoapi' or etc.
+
+
+    Returns:
+        A `tablib.Dataset` instance containing the formatted data if the mode
+        is 'search' and results are present.
+        Returns `None` if the specified `mode` is 'stats' or 'host', as these
+        are not currently implemented.
+    """
+
+    def _format_search_result_dict() -> tablib.Dataset:
+        """Formats the 'results' list from a search query."""
+        data = tablib.Dataset()
+        # Set the headers for the dataset using the provided mapping
+        data.headers = data_headers['search'][api_source]
+        # Append each row from the results list to the dataset
+        for row in query_results.get('results', []):
+            # print(row)
             data.append(row)
-        # del query_results['results'] # 删除原始数据, 避免不必要的内存占用
-        # append方法采用的是引用拷贝机制, 如果上面把原始数据删了, 
-        # dataset中的引用也可能会一并失效
-        # 不能确定dataset的append方法是否也是引用拷贝机制, 先不删除原始数据
         return data
-    
-    def _format_stats_result_dict():
-        """nested_results = query_results['aggs'] # 统计接口的主要返回值在这里
-        
-        rows = [
-            {
-                'field': field,
-                'content': json.dumps(content)
-                # 这里可以做更深入的优化, 但由于没有更多的响应数据
-                # 因此只能先json.dumps了
-            }
-            for field, content in nested_results.items()
-         ]
-        # dict属性可以直接由list导入, 列名取自字典的key
-        data.dict = rows
-        # 由于没有其他字段的返回数据, 因此不方便进行深入优化
-        return data # 该接口目前无法使用!!!"""
-        return None
-    
-    def _format_host_result_dict():
-        """if detail:
-            # detail为True时返回值是一个嵌套dict
-            # 内层dict的keys有多有少, 但总归是有一个并集的, 并且所有keys都是这个并集的子集
-            # Datase的dict方法会自动求并集, 对于空出来的字段会取默认值None
-            # 这样就很方便了
-            data.dict = query_results['ports'] # 这里的返回值就是一个list
-            # keys存在并集 # 可以直接导入
-            return data # 该接口目前也无法使用!!!
-        elif not detail:
-            return None # 没辙，不好优化"""
-        
-        return None # 默认值
-    
-    data = tablib.Dataset()
-        
+
+    def _format_stats_result_dict() -> None:
+        """
+        Placeholder for formatting statistical aggregation results.
+        Currently unimplemented due to complex, nested data structures.
+        """
+        raise NotImplementedError
+
+    def _format_host_result_dict() -> None:
+        """
+        Placeholder for formatting host aggregation results.
+        Currently unimplemented due to complex, nested data structures.
+        """
+        raise NotImplementedError
+
+    # A dispatch table to call the correct formatting function based on mode.
     methods = {
         'search': _format_search_result_dict,
         'stats': _format_stats_result_dict,
         'host': _format_host_result_dict
     }
-    
-    return methods[mode]()
 
-import tablib
+    # Execute the appropriate function for the given mode.
+    # A KeyError will be raised by .get() if an invalid mode is provided.
+    formatter = methods.get(mode)
+    if formatter:
+        return formatter()
+    return None
 
 # This is a placeholder for the actual function for context.
 # The docstring is the key part of this response.
@@ -331,9 +355,50 @@ def _check_query_fields_dict(mode: str, query_dict, translator = _):
     return check_method[mode]()
 
 if __name__ == '__main__':
-    query_dict = {
-        'title': "百度",
-        'domain': 'example.com',
-        'port': ['80', 443]
+    stats_response = {
+  "error": False, # 是否出现错误
+  "consumed_fpoint": 0, # 实际F点
+  "required_fpoints": 0, # 应付F点
+  "size": 4277422, # 查询总数量
+  "distinct": {
+    "ip": 32933,
+    "title": 82280
+  },
+  "aggs": {
+    "title": [
+        {
+            "count": 76234,
+            "name": "网站未备案或已被封禁——百度智能云云主机管家服务"
+        },
+        {
+            "count": 50220,
+            "name": "百度一下, 你就知道"
+        },
+        {
+            "count": 39532,
+            "name": "百度热榜"
+        },
+        {
+            "count": 37177,
+            "name": "百度 H5 - 真正免费的 H5 页面制作平台"
+        },
+        {
+            "count": 33986,
+            "name": "百度SEO"
+        }
+    ]
+  },
+  "lastupdatetime": "2022-05-23 15:00:00"
     }
-    print(_format_query_fields_dict(query_dict))
+    
+    def format_stats_result_dict(stats_response):
+        aggeration = stats_response['aggs']
+        aggs_fields = list(aggeration.keys())
+        print(aggeration)
+        # print(aggs_fields)
+        data = tablib.Dataset()
+        for field, content in aggeration.items():
+            data[field] = content
+        print(data)
+        
+    format_stats_result_dict(stats_response)

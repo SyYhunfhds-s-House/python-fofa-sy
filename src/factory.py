@@ -118,7 +118,7 @@ class Fofa:
                  ) -> None:
         """Initializes the Fofa API client.
 
-        Args:
+        Args:z
             key: The FOFA API key for authentication.
             api: The base URL for the FOFA API. It should not have a
                 trailing slash. Defaults to the official FOFA API.
