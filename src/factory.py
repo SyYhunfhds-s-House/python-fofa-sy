@@ -10,6 +10,8 @@ except ImportError:
     pass
 import tablib
 
+from src.util import query
+
 # 导入自定义模块
 from .basic import _format_query_fields_dict, _format_result_dict, _check_query_fields_dict
 from .basic import _
@@ -34,19 +36,9 @@ _apis = {
     'fofa': _official_api,
     'fofoapi': "https://fofoapi.com/api/v1",
 }
+# 根据官方响应数据反推的格式
 _default_res_fields = {
-        'search': {
-            'fofa': [
-                    'title', 'domain', 'link', 'unk1', 
-                    'cert.subject.org', 'unk2', 'unk3'
-                 ], # FOFA官方API默认字段列表
-            # TODO 根据更多响应数据确认第三方API的真实返回字段
-            'fofoapi': 
-                [
-                    'title', 'domain', 'link', 'unk1', 
-                    'cert.subject.org', 'unk2', 'unk3'
-                 ] # fofoapi第三方API默认字段列表
-        },
+        'search':['link', 'ip', 'port'],
         'stats': ['title'],
         'host': ['port', 'protocol', 'domain', 'category', 'product'],
     }
@@ -70,36 +62,19 @@ class FakeCache:
 _fake_cache = FakeCache() # 空的缓存器
 
 class Fofa:
-    """A client for the FOFA API that also acts as a wrapper for query results.
+    """Initializes the Fofa API client.
 
-    This class simplifies interaction with the main FOFA API endpoints (`search`,
-    `stats`, `host`). After a successful query, the instance itself becomes a
-    proxy for the formatted results, allowing direct manipulation of the data
-    through magic methods as if it were a `tablib.Dataset`.
-
-    This dual functionality means you can perform a query and then immediately
-    work with the results using the same object. For example:
-    
-    ```python
-    fofa = Fofa(key="...")
-    fofa.search("domain=example.com")
-    print(len(fofa))          # Get number of results
-    print(fofa['ip'])         # Access a column (a list of IPs)
-    print(fofa.link)          # Access a column (a list of asset links)
-    del fofa['country_name']  # Remove a column
-    ```
-
-    This wrapper behavior is contingent on the `enable_format` flag being `True`
-    during initialization and a successful result formatting.
-
-    Attributes:
-        results (dict): The raw, unprocessed dictionary response from the most
-            recent API call.
-        assets (Optional[tablib.Dataset]): The formatted query results. This
-            is `None` if formatting is disabled (`enable_format=False`) or if
-            the formatting process for a given endpoint is not implemented or fails.
-        fields (list): The list of field names (headers) for the data in `assets`.
-    """
+        Args:
+            key: The FOFA API key for authentication.
+            api: The base URL for the FOFA API. It should not have a
+                trailing slash. Defaults to the official FOFA API.
+            timeout: Default request timeout in seconds. Defaults to 30.
+            headers: Default custom HTTP headers to be sent with every request.
+            enable_log: If `True`, enables logging of errors and warnings.
+            log_engine: The logging engine to use if logging is enabled.
+                Defaults to the pre-configured logger.
+            enable_cache: (Not yet implemented) Flag to enable response caching.
+        """
     def __init__(self,
                  # API配置
                  key: str, # API密钥
@@ -116,21 +91,29 @@ class Fofa:
                  enable_format: bool = False, # 是否启用自动数据整理
                  # 若不启用则无法使用后续的魔术方法重载效果
                  ) -> None:
-        """Initializes the Fofa API client.
+        """Executes a standard asset search and returns a results container.
 
-        Args:z
-            key: The FOFA API key for authentication.
-            api: The base URL for the FOFA API. It should not have a
-                trailing slash. Defaults to the official FOFA API.
-            timeout: Default request timeout in seconds. Defaults to 30.
-            headers: Default custom HTTP headers to be sent with every request.
-            enable_log: If `True`, enables logging of errors and warnings.
-            log_engine: The logging engine to use if logging is enabled.
-                Defaults to the pre-configured logger.
-            enable_cache: (Not yet implemented) Flag to enable response caching.
-            enable_format: If `True`, automatically formats API responses into
-                `self.assets` and enables the magic method wrappers. If `False`,
-                `self.assets` will remain `None`.
+        This method queries the FOFA search endpoint. It can build a query from
+        a `query_dict` or use a pre-formatted `query_string`.
+
+        Note:
+            It is highly recommended to provide a list of desired fields via the
+            `fields` parameter. The default fields are based on minimal API
+            examples and may not suit your needs. Explicitly defining `fields`
+            ensures you get exactly the data you require.
+
+        Args:
+            query_string: The raw FOFA search query string. Takes precedence.
+            query_dict: A dictionary of criteria to build a query from.
+            fields: A list of result fields to retrieve (e.g., ['ip', 'port']).
+            size: The maximum number of results to retrieve.
+            page: The page number for pagination.
+            headers: Custom HTTP headers for the request.
+            timeout: The request timeout in seconds.
+
+        Returns:
+            A `FofaAssets` object containing the processed data, or `None` if
+            the API call fails.
         """
         # 配置API链接
         _search_api = '/api/v1/search/all'
@@ -177,11 +160,13 @@ class Fofa:
     def search(self, 
                query_string: str,
                query_dict: dict = {},
+               fields: list = _default_res_fields['search'],
                # 默认的返回值字段
                size: int = 10000,
                page: int = 1,
                # 请求参数
                headers: dict = {},
+               proxies: dict = None, # 默认关闭代理
                timeout: int = 30
                ) -> dict:
         """Executes a search query against the FOFA API and updates instance attributes.
@@ -206,15 +191,18 @@ class Fofa:
                 over `query_dict`.
             query_dict: A dictionary of search criteria to be formatted into
                 a query string. It is only used if `query_string` is empty.
+            fields: A list of result fields to retrieve (e.g., ['ip', 'port']).
             size: The maximum number of results to retrieve. Defaults to 10000.
                 This value may be automatically reduced for certain queries.
             page: The page number for pagination. Defaults to 1.
             headers: Custom HTTP headers for the request. Defaults to {}.
+            proxies: Custom HTTP proxies for the request. Defaults to None
+                which is diasble http request over specified proxy.
             timeout: The request timeout in seconds. Defaults to 30.
 
         Returns:
-            The raw dictionary parsed from the API's JSON response. Returns
-            `None` if the API call fails and the exception is caught internally.
+            A `FofaAssets` object in 'search' mode, providing dict-like
+            access to the host data, or `None` on failure.
 
         Raises:
             ParamsMisconfiguredError: If both `query_string` and `query_dict`
@@ -222,7 +210,6 @@ class Fofa:
                 formatting helpers if they occur.
         """
         # 首先检查查询字符串是否为空, 如果不为空那么直接传入
-        fields = []
         if query_string == '':
             # 如果为空, 那么尝试根据query_dict生成查询字符串
             if query_dict == {}: # 如果query_dict也为空, 那么直接报错
@@ -242,59 +229,44 @@ class Fofa:
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
-            fields = list(query_dict.keys()) # 获取所有的键作为字段名
-            self.fields = fields # 更新实例属性fields    
+        else:
+            pass
+            
+        self.fields = fields # 更新实例属性fields    
         
-        # 如果fields为空, 那么就不引入fields字段列表参数
         try:
-            if fields == []:
-                # 开始查询
-                res = search(
-                    logger=self._log_engine,
-                    translator=_,
-                    url=self._search_url,
-                    apikey=self._apikey,
-                    query_string=query_string,
-                    size=size,
-                    page=page,
-                )
-            else:
-                res = search(
-                    logger=self._log_engine,
-                    translator=_,
-                    url=self._search_url,
-                    apikey=self._apikey,
-                    query_string=query_string,
-                    size=size,
-                    page=page,
-                    fields=fields
-                )
+            res = search(
+                logger=self._log_engine,
+                translator=_,
+                url=self._search_url,
+                apikey=self._apikey,
+                query_string=query_string,
+                size=size,
+                page=page,
+                fields=fields
+            )
         except Exception as e:
             self._log_engine.error(e)
         self.results = res
         # 这里格式化不成功的话self.assets还是为None
         try:
-            self.assets = _format_result_dict(
-            query_results=res,
-            mode='search',
-            api_source=self._api_source
-        )
+            self.assets = FofaAssets(
+                query_results=res,
+                mode='search',
+                fields=self.fields
+            )
         except Exception as e:
             self._log_engine.error(e)
-        
-        # 最后重新设置一下返回值字段
-        self.fields = _default_res_fields['search'][self._api_source]
    
-        return res # 返回的是原始的查询结果, 类型为dict
+        return self.assets
     
-    # TODO 根据stats响应数据完善接口
     def stats(self, 
               query_string: str,
               query_dict: dict = {},
               fields: list = ['title', 'ip', 'host', 'port', 'os', 'server', 'icp'],
-              
               headers: dict = {},
               cookies: dict = {},
+              proxies: dict = None,
               timeout: int = 30
               ) -> dict:
         """Executes a statistical aggregation query against the FOFA API.
@@ -324,9 +296,8 @@ class Fofa:
             timeout: The request timeout in seconds. Defaults to 30.
 
         Returns:
-            The raw dictionary parsed from the API's JSON response, containing
-            the nested aggregation data. Returns `None` if the API call fails
-            and the exception is caught internally.
+             A `FofaAssets` object in 'stats' mode, which provides dict-like
+            access to the raw aggregation data, or `None` on failure.
 
         Raises:
             ParamsMisconfiguredError: If both `query_string` and `query_dict`
@@ -340,13 +311,14 @@ class Fofa:
             'query_string': query_string,
             'headers': headers,
             'cookies': cookies,
-            'timeout': timeout
+            'timeout': timeout,
+            'fields': fields,
+            # 'proxies': proxies
         }
         # 检查查询字符串是否为空, 若不为空, 那么不会修改查询字符串的内容
         # 若为空, 则尝试根据查询dict的内容生成格式化查询字符串
         # 最后提取查询字典的keys作为列名fields
         # 首先检查查询字符串是否为空, 如果不为空那么直接传入
-        fields = []
         if query_string == '':
             # 如果为空, 那么尝试根据query_dict生成查询字符串
             if query_dict == {}: # 如果query_dict也为空, 那么直接报错
@@ -366,11 +338,7 @@ class Fofa:
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
-            fields = list(query_dict.keys()) # 获取所有的键作为字段名
-            self.fields = fields
             
-        if fields != []: # 如果列名不为空就可以加进去了
-            func_params['fields'] = fields
         try:
             self.results = stats(**func_params)
         except Exception as e:
@@ -379,20 +347,15 @@ class Fofa:
         # 所以下面是肯定会抛出异常的
         # self.assets仍然为None
         try:
-            self.assets = _format_result_dict(
-            query_results=self.results,
-            mode='stats',
-            api_source=self._api_source
-        )
+            self.assets = FofaAssets(
+                query_results=self.results,
+                mode='stats',
+            )
         except Exception as e:
             self._log_engine.error(e)
         
-        # 最后重新设置一下返回值字段
-        self.fields = _default_res_fields['stats']
-        
-        return self.results
+        return self.assets
     
-    # TODO 编写完成host接口封装
     def host(self,
              host: str,
              detail: bool = False,
@@ -425,9 +388,8 @@ class Fofa:
                 Defaults to 30.
 
         Returns:
-            The raw dictionary parsed from the API's JSON response containing
-            the host's details. Returns `None` if the API call fails and the
-            exception is caught internally.
+            A `FofaAssets` object in 'host' mode, providing dict-like
+            access to the host data, or `None` on failure.
         """
         func_params = {
             'logger': self._log_engine,
@@ -446,74 +408,201 @@ class Fofa:
             self._log_engine.error(e)
         self.results = res
         try:
-            self.assets = _format_result_dict(
-            query_results=res,
-            mode='host',
-            api_source=self._api_source
-        )
+            self.assets = FofaAssets(
+                query_results=res,
+                mode='host',
+            )
         except Exception as e:
             self._log_engine.error(e)
 
         self.fields = _default_res_fields['host']
         
-        return res
+        return self.assets
     
-    '''
-    不要尝试重写`__getattribute__`方法
-    因为不管是访问实例本身的属性还是访问实例的属性的属性，
-    都会调用到这个方法
-    这样很容易就会触发递归异常
-    '''
+class FofaAssets:
+    """A dynamic data container for results from the FOFA API.
+
+    This class acts as a specialized wrapper around the raw JSON response from a
+    FOFA API query. Its behavior and available features change dynamically based on
+    the `mode` ('search', 'stats', or 'host') it is initialized with.
+
+    For 'search' mode, this class provides a full-featured interface by formatting
+    the data into a `tablib.Dataset`. This enables powerful, spreadsheet-like
+    operations such as accessing columns/rows, adding/removing columns, and
+    exporting to various formats (CSV, JSON, etc.).
+
+    For 'stats' and 'host' modes, the functionality is currently limited. The
+    class provides basic dictionary-like access to the raw, nested data but
+    does not support table manipulation (add/subtract columns) or direct export
+    to formats like CSV.
+
+    Note:
+        To help improve the functionality for `stats` and `host` modes, we
+        encourage users to open a GitHub issue and provide sample API responses.
+        This will help us understand the data structures and build better
+        formatting and manipulation tools.
+
+    Attributes:
+        assets (Optional[tablib.Dataset | dict]): The processed data container.
+            The type of this attribute depends on the `mode`: `tablib.Dataset`
+            for 'search', and `dict` for 'stats' and 'host'.
+        fields (list): A list of available field names (headers or keys) for the
+            processed data.
+        assets_size (int): The number of assets found. For 'search' mode, this
+            is the number of rows. For 'stats' mode, it is set to -1 to indicate
+            that a simple count is not applicable.
+        detail (bool): A flag that is `True` if the data originated from a
+            detailed `host` query (i.e., the response contains a 'ports' key).
+    """
+    def __init__(self, 
+                 query_results: dict, 
+                 # 查询得到的原始json序列化结果
+                 # 包括err, errrmsg, size, query那些字段
+                 mode: str = 'search', # 查询结果来自的接口
+                 # 可选的值有search, stats, host
+                 # 必须指定
+                 # 这将直接影响实例的魔术方法行为
+                 fields: list = ['link', 'ip', 'port'],
+                 # 外部传入的fields列表
+                 # 对于search接口, 这是必须指定的
+                 ) -> None:
+        """Initializes the FofaAssets object.
+
+        Args:
+            query_results: The raw dictionary object parsed from the FOFA API's
+                JSON response (including 'error', 'size', etc.).
+            mode: The source API endpoint for the results. Must be one of
+                'search', 'stats', or 'host'. This critically determines the
+                internal data structure and available functionality.
+            fields: A list of headers for the data columns. This is required
+                and primarily used for 'search' mode to structure the dataset.
+        """
+        self.assets = None
+        self.fields = fields # 返回值字段
+        self.assets_size = None # 资产数目
+        self.detail: bool = False # 
+        # 对于host接口, 这是一个特殊字段
+        # 检查是否应该返回端口详情
+        
+        self._raw_results = query_results
+        self._format_mode = mode
+        self._format_dict()
+        
+    # 注册函数
+    def _format_dict(self):
+        # 对于search接口, 正常格式化即可
+        # TODO 完成编写新的三种接口的格式化
+        def _format_search_dict():
+            self.assets = tablib.Dataset()
+            self.assets.headers = self.fields
+            for item in self._raw_results['results']:
+                self.assets.append(item)
+            self.assets_size = len(self.assets)
+            
+        def _format_stats_dict():
+            self.assets = {
+                'distinct': self._raw_results['distinct'],
+                'aggs': self._raw_results['aggs'],
+            }
+            self.fields = list(
+                self._raw_results['aggs'].keys()
+                )
+            self.assets_size = -1 # 标记为不可用
+            
+        def _format_host_dict():
+            # 移除不必要的字段
+            self._raw_results.pop('error')
+            # detail=True时, 返回值字段存在ports键
+            # 用于存储多个端口的详情
+            self.detail = 'ports' in self._raw_results.keys()
+            if not self.detail:
+                self._raw_results.pop('consumed_fpoint')
+                self._raw_results.pop('required_fpoints')
+            self.assets = self._raw_results
+            self.fields = list(self.assets.keys())
+
+        format_methods = {
+            'search': _format_search_dict,
+            'stats': _format_stats_dict,
+            'host': _format_host_dict
+        }
+        try:
+            format_methods[self._format_mode]()
+        except KeyError:
+            raise ValueError(_('Invalid format mode'))
+        
+    @property
+    def results(self): # 有需要的话可以把原始查询结果拿出来
+        return self._raw_results
     
-    def __getattr__(self, name: str):
-        # 当访问一个不存在的属性就可以触发这个方法了
-        try:
+    def __getattr__(self, name):
+        # 分成三个方法来写 
+        # 以便后面补充Pythonic的写法
+        def __search_res_getattr__():
             return self.assets[name]
-        except Exception as e:
-            self._log_engine.error(e)
-            
-    def __getitem__(self, name: str):
-        try:
+
+        def __stats_res_getattr__():
             return self.assets[name]
-        except Exception as e:
-            self._log_engine.error(e)
+        
+        def __host_res_getattr__():
+            return self.assets[name]
             
-    def __sub__(self, existed_column_header: str):
-        # 删除数据表的某一列
-        if self.assets is not None:
-            del self.assets[existed_column_header]
-            self.fields.remove(existed_column_header)
-        else:
-            pass
+        _getattr_methods = {
+            'search': __search_res_getattr__,
+            'stats': __stats_res_getattr__,
+            'host': __host_res_getattr__
+        }
+        return _getattr_methods[self._format_mode]()
+    
+    def __getitem__(self, key_or_index):
+        def __search_res_getitem__(key_or_index):
+            return self.assets[key_or_index]
+        def __stats_res_getitem__(key_or_index):
+            # 其实就是转接了一下对assets的操作
+            return self.assets[key_or_index]
+        def __host_res_getitem__(key_or_index):
+            return self.assets[key_or_index]
         
-    def __len__(self):
-        # 返回查询到的数据的条数
-        # 注意, 只有返回值被正常格式化的时候这些魔术方法才可以使用
-        if self.assets is not None:
-            return len(self.assets)
-        else:
-            return -1
-        
+        _getitem_methods = {
+            'search': __search_res_getitem__,
+            'stats': __stats_res_getitem__,
+            'host': __host_res_getitem__
+        }
+        return _getitem_methods[self._format_mode](key_or_index)
+    
     def __add__(self, append_column_header: str):
-        # 增加一个空的列
-        if self.assets is not None:
+        if self._format_mode == 'search':
             self.assets.append_col(
                 [''] * len(self.assets), header=append_column_header
             )
             self.fields.append(append_column_header)
-        else:
+        else: # stats和host接口不方便实现这个操作
+            # 上面都没抛出异常, 这里也不用管了
+            '''raise NotImplementedError(_("Currently, adding operations to the \
+                columns of return values for stats and host interfaces \
+                is not supported"))'''
             pass
-        
-    def __delattr__(self, name: str) -> None:
-        if self.assets is not None:
-            del self.assets[name]
-        else:
-            return super().__delattr__(name)
+
+    
+    def __sub__(self, existed_column_header: str):
+        if self._format_mode == 'search':
+            try:
+                del self.assets[existed_column_header]
+            except IndexError:
+                pass
+        else: # stats和host接口不方便实现这个操作
+            '''raise NotImplementedError(_("Currently, adding operations to the \
+                columns of return values for stats and host interfaces \
+                is not supported"))'''
+            pass
+    
+    def __len__(self):
+        return self.assets_size
     
     def __repr__(self):
-        return f"<{self.__class__.__name__} api:{self._api} \
-            key:{self._apikey:3}>"
-            
+        return _(f"<FofaAssets object with {self.assets_size} \
+            assets on {self._format_mode} api>")
+        
     def __str__(self):
         if self.assets is not None:
             return f'{self.assets}'
@@ -526,8 +615,23 @@ class Fofa:
         return self.__str__()
     
     def to_csv(self):
-        return self.assets.export('csv')
+        try:
+            return self.assets.export('csv')
+        except AttributeError:
+            raise AttributeError(_('Please install tablib[all] to \
+                obtain support for additional extension formats'))
     
     def to_json(self):
-        return self.assets.export('json')
-    
+        try:
+            return self.assets.export('json')
+        except AttributeError:
+            raise AttributeError(_('Please install tablib[all] to \
+                obtain support for additional extension formats'))
+            
+    def to_yaml(self):
+        try:
+            return self.assets.export('yaml')
+        except AttributeError:
+            raise AttributeError(_('Please install tablib[all] to \
+                obtain support for additional extension formats'))
+            
