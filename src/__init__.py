@@ -1,1 +1,1 @@
-from .factory import Fofa
+from .factory import Fofa, FofaAssets

@@ -1,16 +1,12 @@
 [project]
 name = "python-fofa-sy"
-version = "1.0.0a0"
+version = "1.0.0a1"
 description = "Fofa引擎的Python接口 | A Python api for fofa assets-scan engine"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
     "cachetools>=5.5.2",
     "loguru>=0.7.3",
-    "pytest>=7.4.4",
-    "pytest-mock>=3.11.1",
     "requests>=2.31.0",
-    "requests-mock>=1.12.1",
     "tablib[all]>=3.4.0",
-    "typing-extensions>=4.7.1",
 ]
