@@ -492,5 +492,60 @@ def stats_v2(
     )
     return result
 
+def host_v2(
+    apikey: str, # fofa密钥
+    detail: bool = True, # 是否返回端口详细信息
+    **kwargs # 其他参数
+):
+    """Retrieves all available information for a specific host from the FOFA API.
+
+    This function serves as a wrapper for the FOFA `/host/{ip}` endpoint. It
+    constructs the necessary request parameters and delegates the call to a
+    lower-level handler.
+
+    This refactored version (`v2`) is a critical update, as it corrects a
+    major bug in previous implementations where the `apikey` was accidentally
+    omitted from the request parameters, causing all API calls to fail.
+    The use of `**kwargs` also streamlines the function by forwarding advanced
+    request options directly to the handler.
+
+    Args:
+        apikey: The FOFA API key for authentication.
+        detail: A boolean flag to control the level of detail in the response.
+            If `True` (default), the API returns detailed information for each
+            port, such as banners.
+        **kwargs: Arbitrary keyword arguments passed directly to the
+            `_fofa_get_v2` request handler. The `url` parameter is the most
+            critical and must be provided here. Expected arguments include:
+            - url (str): The target FOFA host API endpoint, pre-formatted
+              with the host's IP address (e.g., "https://fofa.info/api/v1/host/1.1.1.1").
+            - logger (Logger): A logger instance for logging messages.
+            - translator (Callable): A translation function for i18n.
+            - headers (dict): Custom HTTP headers.
+            - cookies (dict): Custom cookies.
+            - timeout (int): Request timeout in seconds.
+            - proxies (dict): Proxies to use for the request.
+
+    Returns:
+        A dictionary containing the parsed JSON response from the FOFA API,
+        which includes all known information for the specified host.
+
+    Raises:
+        FofaConnectionError: If a network-level error occurs.
+        FofaRequestFailed: If the API returns a non-200 status code or a
+            generic error.
+        FofaQuerySyntaxError: If the API indicates a syntax error in the query.
+        InsufficientPermissions: If the API key lacks necessary permissions.
+    """
+    params = {
+        'key': apikey,
+        'detail': detail
+    }
+    result = _fofa_get_v2(
+        **kwargs,
+        params=params
+    )
+    return result
+
 if __name__ == '__main__':
     pass
