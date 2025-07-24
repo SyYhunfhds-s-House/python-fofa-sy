@@ -72,6 +72,7 @@ def _fofa_get(
     
     return result
 
+
 def search(
     logger, # 日志记录器
     translator, # gettext国际化接口
@@ -260,3 +261,93 @@ def host(
         0, timeout
 )
     return result
+
+# TODO 规范_fofa_get函数的代码
+def _fofa_get_v2(
+    logger, # 日志记录器
+    translator, # gettext国际化接口
+    url: str, # fofa查询接口
+    params: dict = {}, # GET请求参数 # 包括apikey
+    headers: dict = {}, # 自定义请求头
+    cookies: dict = {}, # cookies
+    proxies: dict = None, # 代理
+    timeout: int = 30, # 超时时间
+    # 数据量比较大的时候查询时间可能会很大
+):
+    """Sends a GET request to a FOFA API endpoint and handles the response.
+
+    This function is a specialized wrapper around `requests.get` tailored for
+    the FOFA API. It includes robust error handling for common network issues,
+    non-200 HTTP status codes, and specific FOFA API error responses such as
+    syntax errors or permission issues.
+
+    By default, `proxies` is set to `None` to prevent `requests` from
+    automatically using system-level proxy settings, which can resolve
+    connection issues when accessing certain sites while a VPN is active.
+
+    Args:
+        logger: A standard logger object for recording errors.
+        translator: A translation function (typically from `gettext`, aliased
+            as `_`) used for internationalizing log and error messages.
+        url: The target FOFA API endpoint URL.
+        params: A dictionary of query parameters to be sent with the request,
+            which should include the API key.
+        headers: An optional dictionary of custom HTTP request headers.
+        cookies: An optional dictionary of cookies to include in the request.
+        proxies: An optional dictionary specifying proxies for the request.
+            Defaults to `None`.
+        timeout: The request timeout in seconds. A longer timeout is often
+            necessary for queries that return a large amount of data.
+
+    Returns:
+        A dictionary containing the parsed JSON response from the FOFA API
+        on a successful request.
+
+    Raises:
+        FofaConnectionError: If a network-level error occurs (e.g., DNS
+            failure, connection timeout).
+        FofaRequestFailed: If the API returns a non-200 HTTP status code or
+            if the response JSON indicates a generic error (`'error': True`).
+        FofaQuerySyntaxError: If the API error message contains '[820000]',
+            indicating a syntax error in the query.
+        InsufficientPermissions: If the API error message contains '-403',
+            indicating the API key lacks the necessary permissions for the
+            request.
+    """
+    _ = translator # 变更引用名称
+    result = {}
+    try:
+        result = requests.get(
+            url=url,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            proxies=proxies,
+            timeout=timeout
+        )
+    except (
+        requests.ConnectionError, requests.ConnectTimeout):
+        msg = "FOFA query failed. Please \
+            check your network connection"
+        logger.error(_(msg))
+        raise FofaConnectionError(_(msg))
+    
+    if result.status_code != 200:
+        msg = "FOFA query failed. Status code: %s" % result.status_code
+        logger.error(_(msg))
+        raise FofaRequestFailed(_(msg))
+    
+    result = result.json()
+    if result.get('error', False):
+        logger.error(_("Request failed with error message {}").format(result['errmsg']))
+        if '820000' in result['errmsg']:
+            raise FofaQuerySyntaxError()
+        elif '-403' in result['errmsg']:
+            raise InsufficientPermissions(_("Request failed with error message {}").format(result['errmsg']))
+        else:
+            raise FofaRequestFailed(_("Request failed with error message {}").format(result['errmsg']))
+    
+    return result
+
+if __name__ == '__main__':
+    pass
