@@ -270,7 +270,10 @@ def _fofa_get_v2(
     params: dict = {}, # GET请求参数 # 包括apikey
     headers: dict = {}, # 自定义请求头
     cookies: dict = {}, # cookies
-    proxies: dict = None, # 代理
+    proxies: dict = {
+        'http': None,
+        'https': None
+        }, # 代理
     timeout: int = 30, # 超时时间
     # 数据量比较大的时候查询时间可能会很大
 ):
@@ -549,4 +552,7 @@ def host_v2(
     return result
 
 if __name__ == '__main__':
-    pass
+    url = "www.baidu.com"
+    res = _fofa_get_v2(
+        url=url
+    )
