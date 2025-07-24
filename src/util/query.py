@@ -537,6 +537,7 @@ def host_v2(
         FofaQuerySyntaxError: If the API indicates a syntax error in the query.
         InsufficientPermissions: If the API key lacks necessary permissions.
     """
+    
     params = {
         'key': apikey,
         'detail': detail
