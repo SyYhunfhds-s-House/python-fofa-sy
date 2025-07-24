@@ -349,5 +349,87 @@ def _fofa_get_v2(
     
     return result
 
+def search_v2(
+    apikey: str, # fofa密钥
+    query_string: str, # 未进行base64编码的原始查询字符串
+    size: int = 100, # 返回结果数量 
+    # 不设置为10000是因为10000的查询耗时很大, 不便于业务测试
+    page: int = 1,
+    fields: list = ['link', 'ip', 'port'], 
+    # 返回值字段 # 够用就得, 写太多不好测试
+    full: bool = False, # 是否返回一年内的所有数据
+    # 默认为False, 即为只查询近一年的数据
+    **kwargs
+    # logger # translator # url
+    # headers # cookies # timeout
+    # proxies
+    # 传给_fofa_get_v2的剩余参数
+):
+    """Executes a standard asset search against the FOFA API.
+
+    This function serves as a high-level wrapper for a FOFA search query.
+    It handles the Base64 encoding of the query string and constructs the
+    necessary API parameters before passing the request to the underlying
+    `_fofa_get_v2` function.
+
+    If the query yields no results, a warning is logged, but no exception is
+    raised. The function simply returns the API response with `size: 0`.
+
+    Args:
+        apikey: The FOFA API key for authentication.
+        query_string: The raw, unencoded FOFA query string (e.g.,
+            'domain="example.com"').
+        size: The maximum number of results to retrieve. Defaults to 100,
+            which is suitable for most testing and development scenarios.
+        page: The page number for pagination. Defaults to 1.
+        fields: A list of strings specifying which fields to include in the
+            results. Defaults to `['link', 'ip', 'port']`.
+        full: A boolean flag to control the search time range. If `True`,
+            searches all data within the last year. If `False` (default),
+            searches only recent data.
+        **kwargs: Arbitrary keyword arguments that are passed directly to the
+            `_fofa_get_v2` request handler. This allows for advanced control
+            over the request. Expected arguments include:
+            - logger (Logger): A logger instance for logging messages.
+            - translator (Callable): A translation function for i18n.
+            - url (str): The target FOFA search API url (not just an endpoint).
+            - headers (dict): Custom HTTP headers.
+            - cookies (dict): Custom cookies.
+            - timeout (int): Request timeout in seconds.
+            - proxies (dict): Proxies to use for the request.
+
+    Returns:
+        A dictionary containing the parsed JSON response from the FOFA API.
+        On success, this includes a 'results' list and other metadata.
+
+    Raises:
+        FofaConnectionError: If a network-level error occurs.
+        FofaRequestFailed: If the API returns a non-200 status code or a
+            generic error.
+        FofaQuerySyntaxError: If the API indicates a syntax error in the query.
+        InsufficientPermissions: If the API key lacks necessary permissions.
+    """
+    # 不再检查可用额度, 因为官方的API响应不包含剩余可用额度的字段
+    # 第三方API的可用额度有需要的话也可以自己查
+    logger = kwargs['logger']
+    _ = kwargs['translator']
+    params = {
+        'key': apikey,
+        'qbase64': b64encode(query_string.encode('utf8')).decode(),
+        'fields': ','.join(fields),
+        'full': full,
+        'size': size,
+        'page': page
+    }
+    result = _fofa_get_v2(
+        **kwargs,
+        params=params
+    )
+    # 找不到符合条件的资产时仍然会进行日志记录, 但不会抛出异常
+    if result['size'] == 0:
+        logger.warning(_("No assets matching the criteria were found"))
+    
+    return result
+
 if __name__ == '__main__':
     pass
