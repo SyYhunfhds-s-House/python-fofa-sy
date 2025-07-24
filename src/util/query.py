@@ -431,5 +431,66 @@ def search_v2(
     
     return result
 
+def stats_v2(
+    apikey: str, # fofa密钥
+    query_string: str, # 未进行base64编码的原始查询字符串
+    fields: list = ['title'], # 统计字段
+    # 这里是根据官方给出的响应示例匹配的
+    # 使用时请一定要根据自身情况进行调整
+    **kwargs
+):
+    """Executes a statistical aggregation query against the FOFA API.
+
+    This function provides a streamlined interface to the FOFA stats endpoint.
+    It handles the construction of API parameters, including Base64 encoding
+    the query string, and delegates the HTTP request to a lower-level handler.
+
+    This refactored version (`v2`) corrects a critical bug from previous
+    implementations where the `apikey` was omitted from the request parameters.
+    Additionally, the use of `**kwargs` significantly simplifies the function's
+    signature by forwarding advanced request options directly to the handler,
+    reducing code redundancy.
+
+    Args:
+        apikey: The FOFA API key for authentication.
+        query_string: The raw, unencoded FOFA query string (e.g.,
+            'country="CN"') that defines the scope of assets for aggregation.
+        fields: A list of fields on which to perform the statistical
+            aggregation. **Important:** The default value is based on simple
+            API examples; users should customize this list to fit their
+            specific needs (e.g., `['country', 'port']`).
+        **kwargs: Arbitrary keyword arguments passed directly to the
+            `_fofa_get_v2` request handler for advanced control. Expected
+            arguments include:
+            - logger (Logger): A logger instance for logging messages.
+            - translator (Callable): A translation function for i18n.
+            - url (str): The target FOFA stats API url (not just an endpoint).
+            - headers (dict): Custom HTTP headers.
+            - cookies (dict): Custom cookies.
+            - timeout (int): Request timeout in seconds.
+            - proxies (dict): Proxies to use for the request.
+
+    Returns:
+        A dictionary containing the parsed JSON response from the FOFA API,
+        which includes the nested aggregation data under keys like `aggs`.
+
+    Raises:
+        FofaConnectionError: If a network-level error occurs.
+        FofaRequestFailed: If the API returns a non-200 status code or a
+            generic error.
+        FofaQuerySyntaxError: If the API indicates a syntax error in the query.
+        InsufficientPermissions: If the API key lacks necessary permissions.
+    """
+    params = {
+        'key': apikey,
+        'qbase64': b64encode(query_string.encode('utf8')).decode(),
+        'fields': ','.join(fields),
+    }
+    result = _fofa_get_v2(
+        **kwargs,
+        params=params
+    )
+    return result
+
 if __name__ == '__main__':
     pass
