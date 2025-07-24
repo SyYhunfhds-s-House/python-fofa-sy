@@ -16,7 +16,7 @@ from src.util import query
 from .basic import _format_query_fields_dict, _format_result_dict, _check_query_fields_dict
 from .basic import _
 from .basic import * # 导入异常类
-from .util import search, stats, host 
+from .util import search_v2, stats_v2, host_v2
 
 # 定义全局常量
 _official_api = "https://fofa.info" # 如果修改了api, 那么官方接口可能无法正常使用
@@ -160,56 +160,65 @@ class Fofa:
     def search(self, 
                query_string: str,
                query_dict: dict = {},
-               fields: list = _default_res_fields['search'],
-               # 默认的返回值字段
-               size: int = 10000,
-               page: int = 1,
-               # 请求参数
-               headers: dict = {},
-               proxies: dict = None, # 默认关闭代理
-               timeout: int = 30
+               **kwargs
+               # 内容(可选可自由配置)
+               # fields: list = ['link', 'ip', 'port']
+               # size: int = 100
+               # page: int = 1
+               # full: bool = False
+               # timeout: int = 30
+               # proxies: dict = {}
+               # headers: dict = {}
+               # cookies: dict = {}
+               # 从实例和环境中导入(函数自动导入)
+               # 如有需要, 请在实例初始化后手动修改实例的私有变量
+               # url: str = self._search_url # 可以通过实例初始化时的api参数修改(前缀域名)
+               # logger: self._log_engine
+               # translator = _
                ) -> dict:
-        """Executes a search query against the FOFA API and updates instance attributes.
+        """Executes a FOFA asset search and returns a FofaAssets container.
 
-        This method provides two ways to perform a search:
-        1.  By providing a pre-formatted `query_string`.
-        2.  By supplying a `query_dict`, which the method will automatically
-            validate and format into a FOFA query string.
+        This method acts as a user-friendly interface for the `search_v2`
+        function. It can construct a valid query from a dictionary if
+        `query_string` is empty, or use the provided string directly.
 
-        If a `query_string` is provided, it takes precedence. If using `query_dict`,
-        the method checks for invalid fields and may automatically adjust the `size`
-        parameter downwards for resource-intensive fields (e.g., 'body', 'cert')
-        to comply with API limitations.
+        All optional search parameters (like `size`, `page`, `fields`, etc.)
+        are passed through `**kwargs` to the underlying search logic, offering
+        a flexible and clean way to customize the query.
 
-        Upon a successful API call, this method produces side effects:
-        - `self.results` is updated with the raw dictionary response from the API.
-        - `self.assets` is updated with a `tablib.Dataset` object of the
-          formatted results. If formatting fails, `self.assets` remains `None`.
+        Upon completion, this method updates the instance's `self.results`
+        (raw data) and `self.assets` (`FofaAssets` object) attributes with the
+        newest data.
 
         Args:
-            query_string: The raw FOFA search query string. Takes precedence
-                over `query_dict`.
-            query_dict: A dictionary of search criteria to be formatted into
-                a query string. It is only used if `query_string` is empty.
-            fields: A list of result fields to retrieve (e.g., ['ip', 'port']).
-            size: The maximum number of results to retrieve. Defaults to 10000.
-                This value may be automatically reduced for certain queries.
-            page: The page number for pagination. Defaults to 1.
-            headers: Custom HTTP headers for the request. Defaults to {}.
-            proxies: Custom HTTP proxies for the request. Defaults to None
-                which is diasble http request over specified proxy.
-            timeout: The request timeout in seconds. Defaults to 30.
+            query_string: The raw, unencoded FOFA search query string (e.g.,
+                'domain="example.com"'). This takes precedence over `query_dict`.
+            query_dict: A dictionary of search criteria, used only if
+                `query_string` is empty. The method will validate and format
+                this dictionary into a valid query string.
+            **kwargs: Arbitrary keyword arguments that are passed directly to
+                the `search_v2` function. This allows for advanced control
+                over the request. Common options include:
+                - fields (List[str]): Result fields to retrieve. Defaults to
+                  `['link', 'ip', 'port']`.
+                - size (int): Number of results to return. Defaults to 100.
+                - page (int): The page number for pagination. Defaults to 1.
+                - full (bool): Set to `True` to search all data within the
+                  last year. Defaults to `False`.
+                - timeout (int): Request timeout in seconds.
+                - proxies (dict): A dictionary of proxies for the request.
 
         Returns:
-            A `FofaAssets` object in 'search' mode, providing dict-like
-            access to the host data, or `None` on failure.
+            A `FofaAssets` object that contains the processed search results
+            and provides methods for data manipulation and export. Returns
+            `None` if the API call fails and the exception is handled.
 
         Raises:
             ParamsMisconfiguredError: If both `query_string` and `query_dict`
-                are empty. Propagates other exceptions from validation and
-                formatting helpers if they occur.
+                are empty, as no query can be performed.
         """
         # 首先检查查询字符串是否为空, 如果不为空那么直接传入
+        size = kwargs.get('size', 100)
         if query_string == '':
             # 如果为空, 那么尝试根据query_dict生成查询字符串
             if query_dict == {}: # 如果query_dict也为空, 那么直接报错
@@ -225,25 +234,25 @@ class Fofa:
             if fixed_size != -1 and size >= fixed_size:
                 # 根据fofa文档官方要求, 如果出现了特殊字段
                 # 那么最大查询条数也是要相应做出修改的
-                size = fixed_size # 修正size最大值
+                kwargs['size'] = fixed_size # 修正size最大值
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
         else:
             pass
-            
+        # 硬编码的默认字段
+        fields = kwargs.get('fields', ['link', 'ip', 'port'])    
         self.fields = fields # 更新实例属性fields    
         
+        res = None
+        kwargs['url'] = self._search_url
+        kwargs['logger'] = self._log_engine
+        kwargs['translator'] = _ # 国际化接口
         try:
-            res = search(
-                logger=self._log_engine,
-                translator=_,
-                url=self._search_url,
+            res = search_v2(
                 apikey=self._apikey,
                 query_string=query_string,
-                size=size,
-                page=page,
-                fields=fields
+                **kwargs
             )
         except Exception as e:
             self._log_engine.error(e)
@@ -263,58 +272,51 @@ class Fofa:
     def stats(self, 
               query_string: str,
               query_dict: dict = {},
-              fields: list = ['title', 'ip', 'host', 'port', 'os', 'server', 'icp'],
-              headers: dict = {},
-              cookies: dict = {},
-              proxies: dict = None,
-              timeout: int = 30
+              **kwargs,
+              # fields: list = ['title'],
+              # headers: dict = {},
+              # cookies: dict = {},
+              # proxies: dict = {}, # 默认不使用系统代理
+              # timeout: int = 30
               ) -> dict:
-        """Executes a statistical aggregation query against the FOFA API.
+        """Executes a statistical aggregation query and returns a FofaAssets container.
 
-        This method queries the FOFA stats endpoint to get aggregated data based
-        on a set of fields for a given search query. It defines the asset scope
-        using either a `query_string` or a `query_dict`.
+        This method provides a user-friendly interface for the `stats_v2` function.
+        It determines the asset scope by either using the provided `query_string` or
+        by building one from `query_dict`.
 
-        A list of fields to aggregate on must be provided via the `fields`
-        parameter.
+        All optional parameters for the API call (e.g., `fields`, `timeout`)
+        are passed via `**kwargs`, offering a flexible way to configure the request.
 
-        Note on Side Effects:
-        - `self.results` is updated with the raw dictionary response from the API.
-        - `self.assets` is intended to hold formatted results. However, the
-          formatting logic for 'stats' mode is not currently implemented, so
-          `self.assets` will likely remain `None` after this call.
+        The method updates `self.results` and `self.assets` and returns a
+        `FofaAssets` object configured in 'stats' mode.
 
         Args:
             query_string: The raw FOFA search query to define the asset scope
                 for aggregation. Takes precedence over `query_dict`.
-            query_dict: A dictionary of search criteria to define the asset
-                scope. Used only if `query_string` is empty.
-            fields: A list of fields to perform the statistical aggregation on.
-                For example, `['country', 'port']` will return counts for each
-                country and port combination found within the query scope.
-            headers: Custom HTTP headers for the request. Defaults to {}.
-            timeout: The request timeout in seconds. Defaults to 30.
+            query_dict: A dictionary of search criteria to build a query from,
+                used only if `query_string` is empty.
+            **kwargs: Arbitrary keyword arguments passed to the underlying
+                `stats_v2` function. Common options include:
+                - fields (List[str]): A list of fields to aggregate on.
+                Defaults to `['title']`.
+                - timeout (int): Request timeout in seconds.
+                - headers (dict): Custom HTTP headers.
+                - proxies (dict): A dictionary of proxies for the request.
 
         Returns:
-             A `FofaAssets` object in 'stats' mode, which provides dict-like
-            access to the raw aggregation data, or `None` on failure.
+            A `FofaAssets` object in 'stats' mode, which provides dict-like
+            access to the raw aggregation data. Returns `None` if the API call fails.
 
         Raises:
             ParamsMisconfiguredError: If both `query_string` and `query_dict`
-                are empty. Propagates other exceptions from validation helpers.
+                are empty.
         """
-        func_params = {
-            'logger': self._log_engine,
-            'translator': _,
-            'url': self._stats_url,
-            'apikey': self._apikey,
-            'query_string': query_string,
-            'headers': headers,
-            'cookies': cookies,
-            'timeout': timeout,
-            'fields': fields,
-            # 'proxies': proxies
-        }
+        res = None
+        kwargs['url'] = self._stats_url
+        kwargs['logger'] = self._log_engine
+        kwargs['translator'] = _ # 国际化接口
+        
         # 检查查询字符串是否为空, 若不为空, 那么不会修改查询字符串的内容
         # 若为空, 则尝试根据查询dict的内容生成格式化查询字符串
         # 最后提取查询字典的keys作为列名fields
@@ -338,14 +340,17 @@ class Fofa:
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
-            
+
         try:
-            self.results = stats(**func_params)
+            self.results = stats_v2(
+                apikey=self._apikey,
+                query_string=query_string,
+                fields=kwargs.pop('fields', ['title']),
+                **kwargs
+                )
         except Exception as e:
-            logger.error(e)
-        # 由于统计接口的返回值处理并没有做好
-        # 所以下面是肯定会抛出异常的
-        # self.assets仍然为None
+            self._log_engine.error(e)
+
         try:
             self.assets = FofaAssets(
                 query_results=self.results,
@@ -359,51 +364,48 @@ class Fofa:
     def host(self,
              host: str,
              detail: bool = False,
-             
-             headers: dict = {},
-             cookies: dict = {},
-             timeout: int = 30
+             **kwargs
+             # headers: dict = {},
+             # cookies: dict = {},
+             # timeout: int = 30
              ) -> dict:
-        """Retrieves all available information for a specific host IP from the FOFA API.
+        """Retrieves all available information for a single host.
 
-        This method queries the `/host/{ip}` endpoint to get all port and
-        protocol information associated with a single host.
+        This method is a high-level wrapper for the `host_v2` function, simplifying
+        calls to the FOFA `/host/{ip}` endpoint. It automatically formats the
+        request URL with the provided host IP.
 
-        Note on Side Effects:
-        - This method attempts to populate `self.assets` with formatted data.
-          However, the formatting logic for 'host' mode is not currently
-          implemented, so `self.assets` will likely remain `None` or unchanged
-          after this call.
+        Optional request parameters like `timeout` and `headers` can be passed
+        flexibly via `**kwargs`.
+
+        The method updates `self.results` and `self.assets` and returns a
+        `FofaAssets` object configured in 'host' mode.
 
         Args:
             host: The IP address of the target host to query (e.g., "1.1.1.1").
-            detail (bool, optional): If set to `True`, the API will return more
-                detailed information for each port, such as banners.
-                Defaults to `False`.
-            headers (dict, optional): Custom HTTP headers for the request.
-                Defaults to {}.
-            cookies (dict, optional): Cookies to include in the request.
-                Defaults to {}.
-            timeout (int, optional): The request timeout in seconds.
-                Defaults to 30.
+            detail: If `True`, requests detailed information for each port, such
+                as banners and products. Defaults to `False`.
+            **kwargs: Arbitrary keyword arguments passed to the underlying
+                `host_v2` function. Common options include:
+                - timeout (int): Request timeout in seconds.
+                - headers (dict): Custom HTTP headers.
+                - cookies (dict): Custom cookies.
+                - proxies (dict): A dictionary of proxies for the request.
 
         Returns:
-            A `FofaAssets` object in 'host' mode, providing dict-like
-            access to the host data, or `None` on failure.
+            A `FofaAssets` object in 'host' mode, which provides dict-like
+            access to the detailed host data. Returns `None` if the API call fails.
         """
-        func_params = {
-            'logger': self._log_engine,
-            'translator': _,
-            'url': self._host_url.format(host=host), # /host/{host} 占位符用在这里
-            'apikey': self._apikey,
-            'detail': detail,
-            'headers': headers,
-            'cookies': cookies,
-            'timeout': timeout
-        }
         res = None
+        kwargs['url'] = self._host_url.format(host)
+        kwargs['logger'] = self._log_engine
+        kwargs['translator'] = _
         try:
-            res = host(**func_params)
+            res = host_v2(
+                apikey=self._apikey,
+                detail=detail,
+                **kwargs
+            )
         except Exception as e:
             self._log_engine.error(e)
         self.results = res
@@ -415,7 +417,7 @@ class Fofa:
         except Exception as e:
             self._log_engine.error(e)
 
-        self.fields = _default_res_fields['host']
+        self.fields = kwargs.get('fields', [])
         
         return self.assets
     
@@ -491,7 +493,7 @@ class FofaAssets:
     # 注册函数
     def _format_dict(self):
         # 对于search接口, 正常格式化即可
-        # TODO 完成编写新的三种接口的格式化
+
         def _format_search_dict():
             self.assets = tablib.Dataset()
             self.assets.headers = self.fields
