@@ -154,7 +154,7 @@ class Fofa:
              **kwargs
              ):
         return Fofa(**kwargs)
-    
+    # TODO 为search, stats, host接口添加functools.lru_cache装饰器, 缓存查询结果
     def search(self, 
                query_string: str,
                query_dict: dict = {},
@@ -239,13 +239,19 @@ class Fofa:
         else:
             pass
         # 硬编码的默认字段
-        fields = kwargs.get('fields', ['link', 'ip', 'port'])    
+        fields = kwargs.get('fields', 
+                            ['host', 'title', 'ip', 'domain', 'port', 'country', 'city']
+                            )
+        # 测试时发现fields列表为空时仍然可以进行查询, 但是会导致查询结果为空
+        if fields == []:
+            fields = ['host', 'title', 'ip', 'domain', 'port', 'country', 'city']    
         self.fields = fields # 更新实例属性fields    
         
         res = None
         kwargs['url'] = self._search_url
         kwargs['logger'] = self._log_engine
         kwargs['translator'] = _ # 国际化接口
+        kwargs['fields'] = fields
         try:
             res = search_v2(
                 apikey=self._apikey,
@@ -338,11 +344,15 @@ class Fofa:
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
+            
+        self.fields = kwargs.pop('fields', ['title'])
+        if self.fields == []:
+            self.fields = ['title']
         try:
             self.results = stats_v2(
                 apikey=self._apikey,
                 query_string=query_string,
-                fields=kwargs.pop('fields', ['title']),
+                fields=self.fields,
                 **kwargs
                 )
         except Exception as e:
@@ -461,7 +471,7 @@ class FofaAssets:
                  # 可选的值有search, stats, host
                  # 必须指定
                  # 这将直接影响实例的魔术方法行为
-                 fields: list = ['link', 'ip', 'port'],
+                 fields: list = ['host', 'title', 'ip', 'domain', 'port', 'country', 'city']
                  # 外部传入的fields列表
                  # 对于search接口, 这是必须指定的
                  ) -> None:
@@ -478,6 +488,7 @@ class FofaAssets:
         """
         self.assets = None
         self.fields = fields # 返回值字段
+        
         self.assets_size = None # 资产数目
         self.detail: bool = False # 
         # 对于host接口, 这是一个特殊字段
@@ -487,13 +498,21 @@ class FofaAssets:
         self._format_mode = mode
         self._format_dict()
         
+        # TODO 为Fofa类实例添加lfu_cache属性, 缓存查询结果
+        
     # 注册函数
     def _format_dict(self):
         # 对于search接口, 正常格式化即可
         def _format_search_dict():
             self.assets = tablib.Dataset()
             self.assets.headers = self.fields
+            print(f"headers: {self.assets.headers}")
+            print(f"raw response: {self._raw_results}")
             for item in self._raw_results['results']:
+                print(f'current line: {item}')
+                if not isinstance(item, (tuple, list)):
+                    self.assets.append([item, ])
+                    continue
                 self.assets.append(item)
             self.assets_size = len(self.assets)
             
