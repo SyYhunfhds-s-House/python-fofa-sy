@@ -1,6 +1,6 @@
 [project]
 name = "python-fofa-sy"
-version = "1.0.1"
+version = "1.0.2"
 description = "Fofa引擎的Python接口 | A Python api for fofa assets-scan engine"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -10,7 +10,20 @@ dependencies = [
     "requests>=2.31.0",
     "tablib>=3.4.0",
 ]
+# 作者信息
+authors = [
+  { name="SyYhunfhds MemorySeer", email="syyhunfhdsmemoryseer@gmail.com" },
+]
+# 许可证信息 # 目录下的LICENSE文件
+license = { file="LICENSE" }
+
+# 项目相关的链接
+[project.urls]
+Homepage = "https://github.com/SyYhunfhds-s-House/python-fofa-sy"
+"Bug Tracker" = "https://github.com/SyYhunfhds-s-House/python-fofa-sy/issues"
+Repository = "https://github.com/SyYhunfhds-s-House/python-fofa-sy"
+
 [tool.hatch.build.targets.wheel]
-# 告诉 hatchling，你的包在 "src/fofa_py" 这个路径下
-# 它会自动将 fofa_py 作为顶级可导入模块
+# 显式指定源代码位于的目录, 这直接决定下载第三方库后从哪里导入组件
+# from fofa_py import *
 packages = ["src/fofa_py"]
