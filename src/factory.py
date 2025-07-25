@@ -161,55 +161,21 @@ class Fofa:
     def search(self, 
                query_string: str,
                query_dict: dict = {},
-               fields: list = _default_res_fields['search'],
-               # 默认的返回值字段
-               size: int = 10000,
-               page: int = 1,
-               # 请求参数
-               headers: dict = {},
-               proxies: dict = None, # 默认关闭代理
-               timeout: int = 30
+               **kwargs
+               # 内容(可选可自由配置)
+               # fields: list = ['link', 'ip', 'port']
+               # size: int = 100
+               # page: int = 1
+               # full: bool = False
+               # timeout: int = 30
+               # proxies: dict = {}
+               # headers: dict = {}
+               # cookies: dict = {}
+               # 从实例和环境中导入(函数自动导入)
+               # url: str = self._search_url
+               # logger: self._log_engine
+               # translator = _
                ) -> dict:
-        """Executes a search query against the FOFA API and updates instance attributes.
-
-        This method provides two ways to perform a search:
-        1.  By providing a pre-formatted `query_string`.
-        2.  By supplying a `query_dict`, which the method will automatically
-            validate and format into a FOFA query string.
-
-        If a `query_string` is provided, it takes precedence. If using `query_dict`,
-        the method checks for invalid fields and may automatically adjust the `size`
-        parameter downwards for resource-intensive fields (e.g., 'body', 'cert')
-        to comply with API limitations.
-
-        Upon a successful API call, this method produces side effects:
-        - `self.results` is updated with the raw dictionary response from the API.
-        - `self.assets` is updated with a `tablib.Dataset` object of the
-          formatted results. If formatting fails, `self.assets` remains `None`.
-
-        Args:
-            query_string: The raw FOFA search query string. Takes precedence
-                over `query_dict`.
-            query_dict: A dictionary of search criteria to be formatted into
-                a query string. It is only used if `query_string` is empty.
-            fields: A list of result fields to retrieve (e.g., ['ip', 'port']).
-            size: The maximum number of results to retrieve. Defaults to 10000.
-                This value may be automatically reduced for certain queries.
-            page: The page number for pagination. Defaults to 1.
-            headers: Custom HTTP headers for the request. Defaults to {}.
-            proxies: Custom HTTP proxies for the request. Defaults to None
-                which is diasble http request over specified proxy.
-            timeout: The request timeout in seconds. Defaults to 30.
-
-        Returns:
-            A `FofaAssets` object in 'search' mode, providing dict-like
-            access to the host data, or `None` on failure.
-
-        Raises:
-            ParamsMisconfiguredError: If both `query_string` and `query_dict`
-                are empty. Propagates other exceptions from validation and
-                formatting helpers if they occur.
-        """
         # 首先检查查询字符串是否为空, 如果不为空那么直接传入
         if query_string == '':
             # 如果为空, 那么尝试根据query_dict生成查询字符串
@@ -232,19 +198,19 @@ class Fofa:
             query_string = self._format_query_dict(query_dict)
         else:
             pass
-            
+        # 硬编码的默认字段
+        fields = kwargs.get('fields', ['link', 'ip', 'port'])    
         self.fields = fields # 更新实例属性fields    
         
+        res = None
+        kwargs['url'] = self._search_url
+        kwargs['logger'] = self._log_engine
+        kwargs['translator'] = _ # 国际化接口
         try:
-            res = search(
-                logger=self._log_engine,
-                translator=_,
-                url=self._search_url,
+            res = search_v2(
                 apikey=self._apikey,
                 query_string=query_string,
-                size=size,
-                page=page,
-                fields=fields
+                **kwargs
             )
         except Exception as e:
             self._log_engine.error(e)
