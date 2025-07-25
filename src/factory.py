@@ -16,7 +16,8 @@ from src.util import query
 from .basic import _format_query_fields_dict, _format_result_dict, _check_query_fields_dict
 from .basic import _
 from .basic import * # 导入异常类
-from .util import search, stats, host 
+from .util import search, stats, host
+from .util import search_v2, stats_v2, host_v2
 
 # 定义全局常量
 _official_api = "https://fofa.info" # 如果修改了api, 那么官方接口可能无法正常使用
@@ -491,7 +492,7 @@ class FofaAssets:
     # 注册函数
     def _format_dict(self):
         # 对于search接口, 正常格式化即可
-        # TODO 完成编写新的三种接口的格式化
+
         def _format_search_dict():
             self.assets = tablib.Dataset()
             self.assets.headers = self.fields

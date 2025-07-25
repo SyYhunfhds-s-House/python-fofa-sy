@@ -262,7 +262,6 @@ def host(
 )
     return result
 
-# TODO 规范_fofa_get函数的代码
 def _fofa_get_v2(
     logger, # 日志记录器
     translator, # gettext国际化接口
