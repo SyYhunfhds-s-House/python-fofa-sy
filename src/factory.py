@@ -280,7 +280,39 @@ class Fofa:
               # proxies: dict = {}, # 默认不使用系统代理
               # timeout: int = 30
               ) -> dict:
-        
+        """Executes a statistical aggregation query and returns a FofaAssets container.
+
+        This method provides a user-friendly interface for the `stats_v2` function.
+        It determines the asset scope by either using the provided `query_string` or
+        by building one from `query_dict`.
+
+        All optional parameters for the API call (e.g., `fields`, `timeout`)
+        are passed via `**kwargs`, offering a flexible way to configure the request.
+
+        The method updates `self.results` and `self.assets` and returns a
+        `FofaAssets` object configured in 'stats' mode.
+
+        Args:
+            query_string: The raw FOFA search query to define the asset scope
+                for aggregation. Takes precedence over `query_dict`.
+            query_dict: A dictionary of search criteria to build a query from,
+                used only if `query_string` is empty.
+            **kwargs: Arbitrary keyword arguments passed to the underlying
+                `stats_v2` function. Common options include:
+                - fields (List[str]): A list of fields to aggregate on.
+                Defaults to `['title']`.
+                - timeout (int): Request timeout in seconds.
+                - headers (dict): Custom HTTP headers.
+                - proxies (dict): A dictionary of proxies for the request.
+
+        Returns:
+            A `FofaAssets` object in 'stats' mode, which provides dict-like
+            access to the raw aggregation data. Returns `None` if the API call fails.
+
+        Raises:
+            ParamsMisconfiguredError: If both `query_string` and `query_dict`
+                are empty.
+        """
         res = None
         kwargs['url'] = self._stats_url
         kwargs['logger'] = self._log_engine
@@ -338,7 +370,33 @@ class Fofa:
              # cookies: dict = {},
              # timeout: int = 30
              ) -> dict:
-        
+        """Retrieves all available information for a single host.
+
+        This method is a high-level wrapper for the `host_v2` function, simplifying
+        calls to the FOFA `/host/{ip}` endpoint. It automatically formats the
+        request URL with the provided host IP.
+
+        Optional request parameters like `timeout` and `headers` can be passed
+        flexibly via `**kwargs`.
+
+        The method updates `self.results` and `self.assets` and returns a
+        `FofaAssets` object configured in 'host' mode.
+
+        Args:
+            host: The IP address of the target host to query (e.g., "1.1.1.1").
+            detail: If `True`, requests detailed information for each port, such
+                as banners and products. Defaults to `False`.
+            **kwargs: Arbitrary keyword arguments passed to the underlying
+                `host_v2` function. Common options include:
+                - timeout (int): Request timeout in seconds.
+                - headers (dict): Custom HTTP headers.
+                - cookies (dict): Custom cookies.
+                - proxies (dict): A dictionary of proxies for the request.
+
+        Returns:
+            A `FofaAssets` object in 'host' mode, which provides dict-like
+            access to the detailed host data. Returns `None` if the API call fails.
+        """
         res = None
         kwargs['url'] = self._host_url.format(host)
         kwargs['logger'] = self._log_engine
