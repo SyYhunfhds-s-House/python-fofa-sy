@@ -1,12 +1,16 @@
 [project]
 name = "python-fofa-sy"
-version = "1.0.0a1"
+version = "1.0.1"
 description = "Fofa引擎的Python接口 | A Python api for fofa assets-scan engine"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
-    "cachetools>=5.5.2",
+    "cachetools>=5.2.0",
     "loguru>=0.7.3",
     "requests>=2.31.0",
-    "tablib[all]>=3.4.0",
+    "tablib>=3.4.0",
 ]
+[tool.hatch.build.targets.wheel]
+# 告诉 hatchling，你的包在 "src/fofa_py" 这个路径下
+# 它会自动将 fofa_py 作为顶级可导入模块
+packages = ["src/fofa_py"]
