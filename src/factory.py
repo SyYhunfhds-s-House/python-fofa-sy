@@ -230,58 +230,19 @@ class Fofa:
     def stats(self, 
               query_string: str,
               query_dict: dict = {},
-              fields: list = ['title', 'ip', 'host', 'port', 'os', 'server', 'icp'],
-              headers: dict = {},
-              cookies: dict = {},
-              proxies: dict = None,
-              timeout: int = 30
+              **kwargs,
+              # fields: list = ['title'],
+              # headers: dict = {},
+              # cookies: dict = {},
+              # proxies: dict = {}, # 默认不使用系统代理
+              # timeout: int = 30
               ) -> dict:
-        """Executes a statistical aggregation query against the FOFA API.
-
-        This method queries the FOFA stats endpoint to get aggregated data based
-        on a set of fields for a given search query. It defines the asset scope
-        using either a `query_string` or a `query_dict`.
-
-        A list of fields to aggregate on must be provided via the `fields`
-        parameter.
-
-        Note on Side Effects:
-        - `self.results` is updated with the raw dictionary response from the API.
-        - `self.assets` is intended to hold formatted results. However, the
-          formatting logic for 'stats' mode is not currently implemented, so
-          `self.assets` will likely remain `None` after this call.
-
-        Args:
-            query_string: The raw FOFA search query to define the asset scope
-                for aggregation. Takes precedence over `query_dict`.
-            query_dict: A dictionary of search criteria to define the asset
-                scope. Used only if `query_string` is empty.
-            fields: A list of fields to perform the statistical aggregation on.
-                For example, `['country', 'port']` will return counts for each
-                country and port combination found within the query scope.
-            headers: Custom HTTP headers for the request. Defaults to {}.
-            timeout: The request timeout in seconds. Defaults to 30.
-
-        Returns:
-             A `FofaAssets` object in 'stats' mode, which provides dict-like
-            access to the raw aggregation data, or `None` on failure.
-
-        Raises:
-            ParamsMisconfiguredError: If both `query_string` and `query_dict`
-                are empty. Propagates other exceptions from validation helpers.
-        """
-        func_params = {
-            'logger': self._log_engine,
-            'translator': _,
-            'url': self._stats_url,
-            'apikey': self._apikey,
-            'query_string': query_string,
-            'headers': headers,
-            'cookies': cookies,
-            'timeout': timeout,
-            'fields': fields,
-            # 'proxies': proxies
-        }
+        
+        res = None
+        kwargs['url'] = self._search_url
+        kwargs['logger'] = self._log_engine
+        kwargs['translator'] = _ # 国际化接口
+        
         # 检查查询字符串是否为空, 若不为空, 那么不会修改查询字符串的内容
         # 若为空, 则尝试根据查询dict的内容生成格式化查询字符串
         # 最后提取查询字典的keys作为列名fields
@@ -305,14 +266,16 @@ class Fofa:
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
-            
+
         try:
-            self.results = stats(**func_params)
+            self.results = stats_v2(
+                apikey=self._apikey,
+                query_string=query_string,
+                **kwargs
+                )
         except Exception as e:
             logger.error(e)
-        # 由于统计接口的返回值处理并没有做好
-        # 所以下面是肯定会抛出异常的
-        # self.assets仍然为None
+
         try:
             self.assets = FofaAssets(
                 query_results=self.results,
