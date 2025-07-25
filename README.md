@@ -6,8 +6,36 @@
 
 ***
 
+## 安装
+
+```bash
+# 现在只在testpypi发布了测试版
+# prelease安装
+uv pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple --prerelease=allow python-fofa-sy --no-cache
+# 正式版安装
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple python-fofa-sy
+```
+- --index-url 主索引
+- --extra-index-url 备用索引
+- --prerelease=allow 允许预发布版本
+- --no-cache 禁用uv本地缓存
+
+```
+# 安装后
+pip show python-fofa-sy      
+Name: python-fofa-sy
+Version: 1.0.1
+Summary: Fofa引擎的Python接口 | A Python api for fofa assets-scan engine
+Home-page:
+Author:
+Author-email:
+License:
+Location: e:\pythonkits\pythonversions\python37\lib\site-packages
+Requires: cachetools, loguru, requests, tablib
+Required-by:
+```
+
 ## Fofa API 客户端使用文档
-TODO 根据项目代码编写项目功能描述
 
 *Gemini 2.5 Pro生成*
 
@@ -24,8 +52,7 @@ TODO 根据项目代码编写项目功能描述
 
 ```python
 # 1. 导入 Fofa 客户端
-from fofa_sdk import Fofa
-# 这里是Gemini生成的, 我还没想好包名应该叫什么
+from fofa_py import Fofa
 
 # 2. 初始化客户端，并填入您的 API 密钥
 # 假设您的 FOFA Key 是 "YOUR_FOFA_API_KEY"
