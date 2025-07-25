@@ -239,7 +239,7 @@ class Fofa:
               ) -> dict:
         
         res = None
-        kwargs['url'] = self._search_url
+        kwargs['url'] = self._stats_url
         kwargs['logger'] = self._log_engine
         kwargs['translator'] = _ # 国际化接口
         
@@ -271,10 +271,11 @@ class Fofa:
             self.results = stats_v2(
                 apikey=self._apikey,
                 query_string=query_string,
+                fields=kwargs.pop('fields', ['title']),
                 **kwargs
                 )
         except Exception as e:
-            logger.error(e)
+            self._log_engine.error(e)
 
         try:
             self.assets = FofaAssets(
@@ -289,51 +290,22 @@ class Fofa:
     def host(self,
              host: str,
              detail: bool = False,
-             
-             headers: dict = {},
-             cookies: dict = {},
-             timeout: int = 30
+             **kwargs
+             # headers: dict = {},
+             # cookies: dict = {},
+             # timeout: int = 30
              ) -> dict:
-        """Retrieves all available information for a specific host IP from the FOFA API.
-
-        This method queries the `/host/{ip}` endpoint to get all port and
-        protocol information associated with a single host.
-
-        Note on Side Effects:
-        - This method attempts to populate `self.assets` with formatted data.
-          However, the formatting logic for 'host' mode is not currently
-          implemented, so `self.assets` will likely remain `None` or unchanged
-          after this call.
-
-        Args:
-            host: The IP address of the target host to query (e.g., "1.1.1.1").
-            detail (bool, optional): If set to `True`, the API will return more
-                detailed information for each port, such as banners.
-                Defaults to `False`.
-            headers (dict, optional): Custom HTTP headers for the request.
-                Defaults to {}.
-            cookies (dict, optional): Cookies to include in the request.
-                Defaults to {}.
-            timeout (int, optional): The request timeout in seconds.
-                Defaults to 30.
-
-        Returns:
-            A `FofaAssets` object in 'host' mode, providing dict-like
-            access to the host data, or `None` on failure.
-        """
-        func_params = {
-            'logger': self._log_engine,
-            'translator': _,
-            'url': self._host_url.format(host=host), # /host/{host} 占位符用在这里
-            'apikey': self._apikey,
-            'detail': detail,
-            'headers': headers,
-            'cookies': cookies,
-            'timeout': timeout
-        }
+        
         res = None
+        kwargs['url'] = self._host_url.format(host)
+        kwargs['logger'] = self._log_engine
+        kwargs['translator'] = _
         try:
-            res = host(**func_params)
+            res = host_v2(
+                apikey=self._apikey,
+                detail=detail,
+                **kwargs
+            )
         except Exception as e:
             self._log_engine.error(e)
         self.results = res
@@ -345,7 +317,7 @@ class Fofa:
         except Exception as e:
             self._log_engine.error(e)
 
-        self.fields = _default_res_fields['host']
+        self.fields = kwargs.get('fields', [])
         
         return self.assets
     
