@@ -16,7 +16,6 @@ from src.util import query
 from .basic import _format_query_fields_dict, _format_result_dict, _check_query_fields_dict
 from .basic import _
 from .basic import * # 导入异常类
-from .util import search, stats, host
 from .util import search_v2, stats_v2, host_v2
 
 # 定义全局常量
