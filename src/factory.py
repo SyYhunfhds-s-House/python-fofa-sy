@@ -172,11 +172,54 @@ class Fofa:
                # headers: dict = {}
                # cookies: dict = {}
                # 从实例和环境中导入(函数自动导入)
-               # url: str = self._search_url
+               # 如有需要, 请在实例初始化后手动修改实例的私有变量
+               # url: str = self._search_url # 可以通过实例初始化时的api参数修改(前缀域名)
                # logger: self._log_engine
                # translator = _
                ) -> dict:
+        """Executes a FOFA asset search and returns a FofaAssets container.
+
+        This method acts as a user-friendly interface for the `search_v2`
+        function. It can construct a valid query from a dictionary if
+        `query_string` is empty, or use the provided string directly.
+
+        All optional search parameters (like `size`, `page`, `fields`, etc.)
+        are passed through `**kwargs` to the underlying search logic, offering
+        a flexible and clean way to customize the query.
+
+        Upon completion, this method updates the instance's `self.results`
+        (raw data) and `self.assets` (`FofaAssets` object) attributes with the
+        newest data.
+
+        Args:
+            query_string: The raw, unencoded FOFA search query string (e.g.,
+                'domain="example.com"'). This takes precedence over `query_dict`.
+            query_dict: A dictionary of search criteria, used only if
+                `query_string` is empty. The method will validate and format
+                this dictionary into a valid query string.
+            **kwargs: Arbitrary keyword arguments that are passed directly to
+                the `search_v2` function. This allows for advanced control
+                over the request. Common options include:
+                - fields (List[str]): Result fields to retrieve. Defaults to
+                  `['link', 'ip', 'port']`.
+                - size (int): Number of results to return. Defaults to 100.
+                - page (int): The page number for pagination. Defaults to 1.
+                - full (bool): Set to `True` to search all data within the
+                  last year. Defaults to `False`.
+                - timeout (int): Request timeout in seconds.
+                - proxies (dict): A dictionary of proxies for the request.
+
+        Returns:
+            A `FofaAssets` object that contains the processed search results
+            and provides methods for data manipulation and export. Returns
+            `None` if the API call fails and the exception is handled.
+
+        Raises:
+            ParamsMisconfiguredError: If both `query_string` and `query_dict`
+                are empty, as no query can be performed.
+        """
         # 首先检查查询字符串是否为空, 如果不为空那么直接传入
+        size = kwargs.get('size', 100)
         if query_string == '':
             # 如果为空, 那么尝试根据query_dict生成查询字符串
             if query_dict == {}: # 如果query_dict也为空, 那么直接报错
@@ -192,7 +235,7 @@ class Fofa:
             if fixed_size != -1 and size >= fixed_size:
                 # 根据fofa文档官方要求, 如果出现了特殊字段
                 # 那么最大查询条数也是要相应做出修改的
-                size = fixed_size # 修正size最大值
+                kwargs['size'] = fixed_size # 修正size最大值
             
             # 生成格式化查询字符串
             query_string = self._format_query_dict(query_dict)
