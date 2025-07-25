@@ -270,23 +270,40 @@ class Fofa:
         )
         assets = None
         try:
-            idx, mode, at, __, assets = self.cache[hash]
+            idx, mode, at, query, assets = self.cache[hash]
             # 这个__表示查询字符串, 这里是为了防止干扰上面的query_string
+            # 使用format模板字符串, 确保gettext正确识别文本
+            self._log_engine.info(_(
+                "cache hit: {assets}, mode: {mode}, at: {at}, query: {query}. \
+                    asset query step will be skipped",
+            ).format(assets=assets, mode=mode, at=at, query=query))
         except Exception as e:
-            pass
-        
-        if assets is None or not self._enable_cache:    
+            self._log_engine.debug(_(
+                "cache miss: {error}, hash: {hash}. asset query steps will be performed",
+            ).format(error=e, hash=hash))
+
+        if assets is None or not self._enable_cache:
             res = None
             kwargs['url'] = self._search_url
             kwargs['logger'] = self._log_engine
             kwargs['translator'] = _ # 国际化接口
             kwargs['fields'] = fields
             try:
+                self._log_engine.debug(_(
+                    "Executing search with query string: {query_string}, \
+                        fields: {fields}"
+                ).format(
+                    query_string=query_string,
+                    fields=fields,
+                ))
                 res = search_v2(
                     apikey=self._apikey,
                     query_string=query_string,
                     **kwargs
                 )
+                self._log_engine.info(_(
+                    "Search completed with {size} results"
+                ).format(size=res.get('size', 0)))
             except Exception as e:
                 self._log_engine.error(e)
             self.results = res
@@ -298,6 +315,9 @@ class Fofa:
                     fields=self.fields,
                     query_string=query_string
                 )
+                self._log_engine.info(_(
+                    "FofaAssets object created with {size} assets"
+                ).format(size=len(assets)))
                 new_cache = len(self.cache) + 1, 'search', now(), query_string, assets
                 self.cache[hash] = new_cache
                 self.dashboard.append(new_cache)
@@ -390,17 +410,33 @@ class Fofa:
         assets = None
         try:
             idx, mode, at, __, assets = self.cache[hash]
+            self._log_engine.info(_(
+                "cache hit: {assets}, mode: {mode}, at: {at}, query: {query}. \
+                    asset query step will be skipped",
+            ).format(assets=assets, mode=mode, at=at, query=query_string))
         except Exception as e:
-            pass
+            self._log_engine.debug(_(
+                "cache miss: {error}, hash: {hash}. asset query steps will be performed",
+            ).format(error=e, hash=hash))
         
         if assets is None or not self._enable_cache:    
             try:
+                self._log_engine.debug(_(
+                    "Executing stats with query_string: {query_string}, \
+                        fields: {fields}"
+                ).format(
+                    query_string=query_string,
+                    fields=self.fields,
+                ))
                 self.results = stats_v2(
                     apikey=self._apikey,
                     query_string=query_string,
                     fields=self.fields,
                     **kwargs
                     )
+                self._log_engine.info(_(
+                    "Stats query completed"
+                ))
             except Exception as e:
                 self._log_engine.error(e)
 
@@ -410,6 +446,9 @@ class Fofa:
                     mode='stats',
                     query_string=query_string
                 )
+                self._log_engine.info(_(
+                    "FofaAssets object at 'stats' mode created successfully"
+                ))
                 new_cache = len(self.cache) + 1, 'stats', now(), query_string, assets
                 self.cache[hash] = new_cache
                 self.dashboard.append(new_cache)
@@ -464,16 +503,31 @@ class Fofa:
         assets = None
         try:
             idx, mode, at, __, assets = self.cache[hash]
+            self._log_engine.info(_(
+                "cache hit: {assets}, mode: {mode}, at: {at}, query: {query}. \
+                    asset query step will be skipped",
+            ).format(assets=assets, mode=mode, at=at, query=host))
         except Exception as e:
-            pass
-        
+            self._log_engine.debug(_(
+                "cache miss: {error}, hash: {hash}. asset query steps will be performed",
+            ).format(error=e, hash=hash))
+
         if assets is None or not self._enable_cache:
             try:
+                self._log_engine.debug(_(
+                    "Executing host with host: {host}, detail: {detail}"
+                ).format(
+                    host=host,
+                    detail=detail,
+                ))
                 res = host_v2(
                     apikey=self._apikey,
                     detail=detail,
                     **kwargs
                 )
+                self._log_engine.info(_(
+                    "Host query completed"
+                ))
             except Exception as e:
                 self._log_engine.error(e)
             self.results = res
@@ -483,6 +537,9 @@ class Fofa:
                     mode='host',
                     query_string=f'host="{host}"'
                 )
+                self._log_engine.info(_(
+                    "FofaAssets object in 'host' mode created successfully"
+                ))
                 new_cache = len(self.cache) + 1, 'host', now(), host, assets
                 self.cache[hash] = new_cache
                 self.dashboard.append(new_cache)
@@ -493,12 +550,10 @@ class Fofa:
         
         return assets
     
-    # TODO 直接打印dashboard以显示历史查询记录
     def history(self):
         if self._enable_cache:
             print(self.dashboard)
 
-    # TODO 从dashboard中选择一个查询记录
     def pick(self, index: int):
         if self._enable_cache:
             return self.dashboard['assets'][index - 1]

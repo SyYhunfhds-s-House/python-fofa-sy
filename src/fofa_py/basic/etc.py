@@ -5,7 +5,12 @@ import json
 # 导入第三方依赖
 import tablib # 这里会蜜汁报错导入不了包(VSC经典静态检查老毛病)
 
-_ = lambda s: s # 接收参数但什么也不干
+try:
+    import gettext
+    # 尝试导入gettext模块, 如果成功则使用它来处理国际化
+    _ = gettext.gettext
+except ImportError:
+    _ = lambda s: s # 接收参数但什么也不干
 
 
 def _format_query_fields_dict(

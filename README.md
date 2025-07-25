@@ -243,26 +243,12 @@ print(assets['protocol'])
 
 ### 潜在的BUG
 - `search`接口中返回值字段列表和返回值实际有的字段可能不一致
-- [已确认] factory.py中的导入语句未使用相对导包语句，直接导致无法在package模式下运行
+- `pyproject.toml`配置不全导致发布之后缺失个人联系信息
 
 ### 未实现的功能
-- 历史搜索结果回溯(使用cachetools缓存库实现, 暂未完成)
-    1. 为Fofa的查询接口分别添加缓存逻辑，缓存FofaAssets对象, 以便下次查询时直接从缓存中获取结果
-        - 使用sha256计算查询参数得到查询结果的key, 防止key太长
-        - 约定缓存值结构如下：
-        ```Markdown
-        - 使用查询字符串、返回值字段、size和page计算得到的sha256作为key
-            - mode, 查询模式, 比如search、stats或host
-            - queried_at, YY-MM-DD HH:mm:ss, 查询时间
-            - query_string, 查询字符串
-            - assets, FofaAssets对象
-
-        ```
-    2. 为FofaAssets增加新的字段, 存储查询时的参数
-    3. 为Fofa添加history系列方法, 用于查看历史查询、返回指定的历史结果和清空历史
-
 - 国际化支持(使用gettext库实现, 暂未完成)
-- Fofa主类实例化时的`timeout`等参数实际上是无效的, 后续将会完全移除
+    1. 检查日志信息, 补充调试语句, 为国际化支持完善文本库
+
 
 ### 未完成的功能
 
@@ -329,6 +315,11 @@ print(assets['protocol'])
             - 将一系列魔术方法分隔到这里, 这样可以避免干扰Fofa主类的使用
 
 - locales, 国际化文件
+    - `fofa_py_src.pot`, 提取源代码目录生成的可翻译字符串`.pot`文件, 用于生成`.po`和`.mo`文件
+        - `pybabel extract -o locales/fofa_py_src.pot src/`, 提取字符串
+        - `pybabel init -i locales/fofa_py_src.pot -d locales -l zh_CN`, 初始化某语言的`.po`
+        - `pybabel update -i locales/fofa_py_src.pot -d locales`, 更新某语言的`.po`
+        - `pybabel compile -d locales`, 编译`.po`文件为`.mo`文件, 用于运行时加载
     - en_US, 英文
     - zh_CN, 中文
 - tests, 测试目录

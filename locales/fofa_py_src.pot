@@ -1,0 +1,118 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-31 13:29+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.14.0\n"
+
+#: src/fofa_py/factory.py:241 src/fofa_py/factory.py:387
+msgid ""
+"The query dict is empty,                         which prevents the query"
+" from being executed"
+msgstr ""
+
+#: src/fofa_py/factory.py:276 src/fofa_py/factory.py:413
+#: src/fofa_py/factory.py:506
+msgid ""
+"cache hit: {assets}, mode: {mode}, at: {at}, query: {query}."
+"                     asset query step will be skipped"
+msgstr ""
+
+#: src/fofa_py/factory.py:281 src/fofa_py/factory.py:418
+#: src/fofa_py/factory.py:511
+msgid "cache miss: {error}, hash: {hash}. asset query steps will be performed"
+msgstr ""
+
+#: src/fofa_py/factory.py:292
+msgid ""
+"Executing search with query string: {query_string},"
+"                         fields: {fields}"
+msgstr ""
+
+#: src/fofa_py/factory.py:304
+msgid "Search completed with {size} results"
+msgstr ""
+
+#: src/fofa_py/factory.py:318
+msgid "FofaAssets object created with {size} assets"
+msgstr ""
+
+#: src/fofa_py/factory.py:424
+msgid ""
+"Executing stats with query_string: {query_string},"
+"                         fields: {fields}"
+msgstr ""
+
+#: src/fofa_py/factory.py:437
+msgid "Stats query completed"
+msgstr ""
+
+#: src/fofa_py/factory.py:449
+msgid "FofaAssets object at 'stats' mode created successfully"
+msgstr ""
+
+#: src/fofa_py/factory.py:517
+msgid "Executing host with host: {host}, detail: {detail}"
+msgstr ""
+
+#: src/fofa_py/factory.py:528
+msgid "Host query completed"
+msgstr ""
+
+#: src/fofa_py/factory.py:540
+msgid "FofaAssets object in 'host' mode created successfully"
+msgstr ""
+
+#: src/fofa_py/factory.py:676
+msgid "Invalid format mode"
+msgstr ""
+
+#: src/fofa_py/factory.py:762 src/fofa_py/factory.py:769
+#: src/fofa_py/factory.py:776
+msgid ""
+"Please install tablib[all] to                 obtain support for "
+"additional extension formats"
+msgstr ""
+
+#: src/fofa_py/basic/etc.py:321
+msgid "Redundant fields found "
+msgstr ""
+
+#: src/fofa_py/basic/etc.py:345
+msgid "Redundant fields found for stats query: "
+msgstr ""
+
+#: src/fofa_py/basic/etc.py:350
+msgid "query_dict must be a dict"
+msgstr ""
+
+#: src/fofa_py/util/query.py:57 src/fofa_py/util/query.py:58
+msgid "Connection error or timeout"
+msgstr ""
+
+#: src/fofa_py/util/query.py:61 src/fofa_py/util/query.py:62
+msgid "Request failed with status code {}"
+msgstr ""
+
+#: src/fofa_py/util/query.py:65 src/fofa_py/util/query.py:69
+#: src/fofa_py/util/query.py:71 src/fofa_py/util/query.py:344
+#: src/fofa_py/util/query.py:348 src/fofa_py/util/query.py:350
+msgid "Request failed with error message {}"
+msgstr ""
+
+#: src/fofa_py/util/query.py:432
+msgid "No assets matching the criteria were found"
+msgstr ""
+

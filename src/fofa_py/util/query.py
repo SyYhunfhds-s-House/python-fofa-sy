@@ -1,4 +1,5 @@
 # 导入第三方依赖
+import errno
 import requests
 from requests import ConnectionError, ConnectTimeout
 from loguru import logger
@@ -54,8 +55,8 @@ def _fofa_get(
     try:
         result = requests.get(url, params=params, headers=headers, cookies=cookies)
     except (ConnectionError, ConnectTimeout) as e:
-        logger.error(_("Connection error or timeout"))
-        raise FofaConnectionError(_("Connection error or timeout"))
+        logger.error(_("Connection error or timeout: {error}").format(error=e))
+        raise FofaConnectionError(_("Connection error or timeout: {error}").format(error=e))
     
     if result.status_code != 200:
         logger.error(_("Request failed with status code {}").format(result.status_code))
