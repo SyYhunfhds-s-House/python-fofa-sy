@@ -1,6 +1,6 @@
 [project]
 name = "python-fofa-sy"
-version = "1.0.3"
+version = "1.0.4a0"
 description = "Fofa引擎的Python接口 | A Python api for fofa assets-scan engine"
 readme = "README.md"
 requires-python = ">=3.7"
