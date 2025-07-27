@@ -270,7 +270,8 @@ class Fofa:
         )
         assets = None
         try:
-            idx, mode, at, query_string, assets = self.cache[hash]
+            idx, mode, at, __, assets = self.cache[hash]
+            # 这个__表示查询字符串, 这里是为了防止干扰上面的query_string
         except Exception as e:
             pass
         
@@ -294,7 +295,8 @@ class Fofa:
                 assets = FofaAssets(
                     query_results=res,
                     mode='search',
-                    fields=self.fields
+                    fields=self.fields,
+                    query_string=query_string
                 )
                 new_cache = len(self.cache) + 1, 'search', now(), query_string, assets
                 self.cache[hash] = new_cache
@@ -387,7 +389,7 @@ class Fofa:
         )
         assets = None
         try:
-            idx, mode, at, query_string, assets = self.cache[hash]
+            idx, mode, at, __, assets = self.cache[hash]
         except Exception as e:
             pass
         
@@ -406,6 +408,7 @@ class Fofa:
                 assets = FofaAssets(
                     query_results=self.results,
                     mode='stats',
+                    query_string=query_string
                 )
                 new_cache = len(self.cache) + 1, 'stats', now(), query_string, assets
                 self.cache[hash] = new_cache
@@ -460,7 +463,7 @@ class Fofa:
         )
         assets = None
         try:
-            idx, mode, at, query_string, assets = self.cache[hash]
+            idx, mode, at, __, assets = self.cache[hash]
         except Exception as e:
             pass
         
@@ -478,8 +481,9 @@ class Fofa:
                 assets = FofaAssets(
                     query_results=res,
                     mode='host',
+                    query_string=f'host="{host}"'
                 )
-                new_cache = len(self.cache) + 1, 'host', now(), query_string, assets
+                new_cache = len(self.cache) + 1, 'host', now(), host, assets
                 self.cache[hash] = new_cache
                 self.dashboard.append(new_cache)
             except Exception as e:

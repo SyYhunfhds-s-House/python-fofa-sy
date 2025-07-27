@@ -1,4 +1,4 @@
-from .src import Fofa
+from .src.fofa_py import Fofa, FofaAssets
 
 def main():
     query_string = "domain=\"baidu.com\""
@@ -12,7 +12,7 @@ def main():
     )
     print(fofa._api_source)
     print(fofa.results)
-    print(res)
+    print(res.to_text())
     print(res.fields)
     res + 'unk1'
     print(res.assets)
