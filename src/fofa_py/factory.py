@@ -506,10 +506,7 @@ class FofaAssets:
         def _format_search_dict():
             self.assets = tablib.Dataset()
             self.assets.headers = self.fields
-            print(f"headers: {self.assets.headers}")
-            print(f"raw response: {self._raw_results}")
             for item in self._raw_results['results']:
-                print(f'current line: {item}')
                 if not isinstance(item, (tuple, list)):
                     self.assets.append([item, ])
                     continue
