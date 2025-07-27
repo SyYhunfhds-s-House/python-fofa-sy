@@ -399,3 +399,12 @@ if __name__ == '__main__':
         print(data)
         
     format_stats_result_dict(stats_response)
+    
+import hashlib
+from datetime import datetime
+
+def sha256(args: tuple):
+    return hashlib.sha256(str(args).encode('UTF-8')).hexdigest()
+
+def now():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -246,8 +246,19 @@ print(assets['protocol'])
 
 ### 未实现的功能
 - 历史搜索结果回溯(使用cachetools缓存库实现, 暂未完成)
-    - 修改当前的FofaAssets类，加入self.lfu_cache实例, 防止偶发访问污染缓存
-    - 为Fofa类全局加入lru_cache装饰器, 缓存查询结果
+    1. 为Fofa的查询接口分别添加缓存逻辑，缓存FofaAssets对象, 以便下次查询时直接从缓存中获取结果
+        - 使用sha256计算查询参数得到查询结果的key, 防止key太长
+        - 约定缓存值结构如下：
+        ```Markdown
+        - 使用查询字符串、返回值字段、size和page计算得到的sha256作为key
+            - mode, 查询模式, 比如search、stats或host
+            - queried_at, YY-MM-DD HH:mm:ss, 查询时间
+            - query_string, 查询字符串
+            - assets, FofaAssets对象
+
+        ```
+    2. 为FofaAssets增加新的字段, 存储查询时的参数
+    3. 为Fofa添加history系列方法, 用于查看历史查询、返回指定的历史结果和清空历史
 
 - 国际化支持(使用gettext库实现, 暂未完成)
 - Fofa主类实例化时的`timeout`等参数实际上是无效的, 后续将会完全移除

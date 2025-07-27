@@ -4,20 +4,23 @@
 # 导入第三方依赖
 try:
     from loguru import logger
-    from cachetools import LRUCache, TTLCache, LFUCache
+    from cachetools import TTLCache
     # from typing_extensions import Literal, Optional, Any
 except ImportError:
     pass
+from dataclasses import field
 import tablib
 
 # 导入自定义模块
 from .basic import _format_query_fields_dict, _format_result_dict, _check_query_fields_dict
-from .basic import _
+from .basic import _, sha256, now
 from .basic import * # 导入异常类
 from .util import search_v2, stats_v2, host_v2
 
 # 定义全局常量
 _official_api = "https://fofa.info" # 如果修改了api, 那么官方接口可能无法正常使用
+_cache_max_size = 32
+_cache_ttl = 60 * 10
 
 # 定义无用的空模块
 class FakeLogger:
@@ -86,6 +89,8 @@ class Fofa:
                  enable_log: bool = True, # 是否启用日志
                  log_engine = logger, # 日志引擎
                  enable_cache: bool = False, # 是否启用缓存
+                 cache_max_size: int = _cache_max_size, # 缓存大小 32个对象
+                 cache_ttl: int = _cache_ttl, # 10 分钟
                  enable_format: bool = False, # 是否启用自动数据整理
                  # 若不启用则无法使用后续的魔术方法重载效果
                  ) -> None:
@@ -135,6 +140,18 @@ class Fofa:
         else:
             self._log_engine = log_engine
         self._enable_cache = enable_cache
+        if enable_cache:
+            self.cache = TTLCache(maxsize=cache_max_size, ttl=cache_ttl)
+            '''
+            - 使用查询字符串、返回值字段、size和page计算得到的sha256作为key
+                - mode: str = 'search' 或 'stats' 或 'host'
+                - queried_at, YY-MM-DD HH:mm:ss, 查询时间
+                - query_string, 查询字符串
+                - assets, FofaAssets对象的__repr__
+            '''
+            self.dashboard = tablib.Dataset()
+            # 也是开了缓存才能这样做
+            self.dashboard.headers = ['index', 'mode', 'queried_at', 'query_what', 'assets_repr']
         self._enable_format = enable_format
         
         # 注册函数
@@ -154,7 +171,7 @@ class Fofa:
              **kwargs
              ):
         return Fofa(**kwargs)
-    # TODO 为search, stats, host接口添加functools.lru_cache装饰器, 缓存查询结果
+   
     def search(self, 
                query_string: str,
                query_dict: dict = {},
@@ -245,33 +262,49 @@ class Fofa:
         # 测试时发现fields列表为空时仍然可以进行查询, 但是会导致查询结果为空
         if fields == []:
             fields = ['host', 'title', 'ip', 'domain', 'port', 'country', 'city']    
-        self.fields = fields # 更新实例属性fields    
+        self.fields = fields # 更新实例属性fields
         
-        res = None
-        kwargs['url'] = self._search_url
-        kwargs['logger'] = self._log_engine
-        kwargs['translator'] = _ # 国际化接口
-        kwargs['fields'] = fields
+        hash = sha256(
+            ('search', query_string, fields, 
+             kwargs.get('size', 1), kwargs.get('page', 1))
+        )
+        assets = None
         try:
-            res = search_v2(
-                apikey=self._apikey,
-                query_string=query_string,
-                **kwargs
-            )
+            idx, mode, at, query_string, assets = self.cache[hash]
         except Exception as e:
-            self._log_engine.error(e)
-        self.results = res
-        # 这里格式化不成功的话self.assets还是为None
-        try:
-            self.assets = FofaAssets(
-                query_results=res,
-                mode='search',
-                fields=self.fields
-            )
-        except Exception as e:
-            self._log_engine.error(e)
+            pass
+        
+        if assets is None or not self._enable_cache:    
+            res = None
+            kwargs['url'] = self._search_url
+            kwargs['logger'] = self._log_engine
+            kwargs['translator'] = _ # 国际化接口
+            kwargs['fields'] = fields
+            try:
+                res = search_v2(
+                    apikey=self._apikey,
+                    query_string=query_string,
+                    **kwargs
+                )
+            except Exception as e:
+                self._log_engine.error(e)
+            self.results = res
+            # 这里格式化不成功的话self.assets还是为None
+            try:
+                assets = FofaAssets(
+                    query_results=res,
+                    mode='search',
+                    fields=self.fields
+                )
+                new_cache = len(self.cache) + 1, 'search', now(), query_string, assets
+                self.cache[hash] = new_cache
+                self.dashboard.append(new_cache)
+            except Exception as e:
+                self._log_engine.error(e)
+        else:
+            pass
    
-        return self.assets
+        return assets
     
     def stats(self, 
               query_string: str,
@@ -348,25 +381,39 @@ class Fofa:
         self.fields = kwargs.pop('fields', ['title'])
         if self.fields == []:
             self.fields = ['title']
+            
+        hash = sha256(
+            ('stats', query_string, self.fields)
+        )
+        assets = None
         try:
-            self.results = stats_v2(
-                apikey=self._apikey,
-                query_string=query_string,
-                fields=self.fields,
-                **kwargs
-                )
+            idx, mode, at, query_string, assets = self.cache[hash]
         except Exception as e:
-            self._log_engine.error(e)
-
-        try:
-            self.assets = FofaAssets(
-                query_results=self.results,
-                mode='stats',
-            )
-        except Exception as e:
-            self._log_engine.error(e)
+            pass
         
-        return self.assets
+        if assets is None or not self._enable_cache:    
+            try:
+                self.results = stats_v2(
+                    apikey=self._apikey,
+                    query_string=query_string,
+                    fields=self.fields,
+                    **kwargs
+                    )
+            except Exception as e:
+                self._log_engine.error(e)
+
+            try:
+                assets = FofaAssets(
+                    query_results=self.results,
+                    mode='stats',
+                )
+                new_cache = len(self.cache) + 1, 'stats', now(), query_string, assets
+                self.cache[hash] = new_cache
+                self.dashboard.append(new_cache)
+            except Exception as e:
+                self._log_engine.error(e)
+        
+        return assets
     
     def host(self,
              host: str,
@@ -407,26 +454,50 @@ class Fofa:
         kwargs['url'] = self._host_url.format(host)
         kwargs['logger'] = self._log_engine
         kwargs['translator'] = _
+        
+        hash = sha256(
+            ('host', host, detail)
+        )
+        assets = None
         try:
-            res = host_v2(
-                apikey=self._apikey,
-                detail=detail,
-                **kwargs
-            )
+            idx, mode, at, query_string, assets = self.cache[hash]
         except Exception as e:
-            self._log_engine.error(e)
-        self.results = res
-        try:
-            self.assets = FofaAssets(
-                query_results=res,
-                mode='host',
-            )
-        except Exception as e:
-            self._log_engine.error(e)
+            pass
+        
+        if assets is None or not self._enable_cache:
+            try:
+                res = host_v2(
+                    apikey=self._apikey,
+                    detail=detail,
+                    **kwargs
+                )
+            except Exception as e:
+                self._log_engine.error(e)
+            self.results = res
+            try:
+                assets = FofaAssets(
+                    query_results=res,
+                    mode='host',
+                )
+                new_cache = len(self.cache) + 1, 'host', now(), query_string, assets
+                self.cache[hash] = new_cache
+                self.dashboard.append(new_cache)
+            except Exception as e:
+                self._log_engine.error(e)
 
         self.fields = kwargs.get('fields', [])
         
-        return self.assets
+        return assets
+    
+    # TODO 直接打印dashboard以显示历史查询记录
+    def history(self):
+        if self._enable_cache:
+            print(self.dashboard)
+
+    # TODO 从dashboard中选择一个查询记录
+    def pick(self, index: int):
+        if self._enable_cache:
+            return self.dashboard['assets'][index - 1]
     
 class FofaAssets:
     """A dynamic data container for results from the FOFA API.
@@ -463,7 +534,7 @@ class FofaAssets:
         detail (bool): A flag that is `True` if the data originated from a
             detailed `host` query (i.e., the response contains a 'ports' key).
     """
-    def __init__(self, 
+    def __init__(self,
                  query_results: dict, 
                  # 查询得到的原始json序列化结果
                  # 包括err, errrmsg, size, query那些字段
@@ -471,6 +542,7 @@ class FofaAssets:
                  # 可选的值有search, stats, host
                  # 必须指定
                  # 这将直接影响实例的魔术方法行为
+                 query_string: str = '***', # 查询时的字符串
                  fields: list = ['host', 'title', 'ip', 'domain', 'port', 'country', 'city']
                  # 外部传入的fields列表
                  # 对于search接口, 这是必须指定的
@@ -488,6 +560,7 @@ class FofaAssets:
         """
         self.assets = None
         self.fields = fields # 返回值字段
+        self.query_what = query_string
         
         self.assets_size = None # 资产数目
         self.detail: bool = False # 
@@ -497,8 +570,6 @@ class FofaAssets:
         self._raw_results = query_results
         self._format_mode = mode
         self._format_dict()
-        
-        # TODO 为Fofa类实例添加lfu_cache属性, 缓存查询结果
         
     # 注册函数
     def _format_dict(self):
@@ -614,19 +685,16 @@ class FofaAssets:
         return self.assets_size
     
     def __repr__(self):
-        return _(f"<FofaAssets object with {self.assets_size} \
-            assets on {self._format_mode} api>")
+        return _(f"<FofaAssets object queried for {self.query_what}>")
         
     def __str__(self):
-        if self.assets is not None:
-            return f'{self.assets}'
-        else:
-            return _('The asset data cannot be formatted. \
-                Please access the "fofa.results" property to \
-                    obtain the original data')
+        return self.__repr__()
+    
+    def to_text(self):
+        return str(self.assets)
     
     def to_formatted_text(self):
-        return self.__str__()
+        return str(self.assets)
     
     def to_csv(self):
         try:
