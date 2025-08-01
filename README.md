@@ -2,31 +2,6 @@
 # Python-Fofa-SY
 
 受Shodan官方API启发, 个人编写的一个第三方FOFA Python API
-目前版本为V1, 下面的帮助文档也是基于V1版本的。
-
-***
-
-### **一个新手开发者的开源之旅与诚挚请求**
-*Gemini 2.5 Pro生成*
-
-您好！非常感谢您关注并使用 `python-fofa-sy`。
-
-作为我的第一个公开的开源项目，它的诞生与成长过程，对我而言是一次充满挑战、也收获满满的学习之旅。从最初一个仅能满足个人需求的小脚本，到如今一个可被打包、分发的工具，我踩过了许多新手开发者都会遇到的“坑”。
-
-通过不断地重构和迭代，我解决了以下这些在早期版本中真实存在过的问题：
-
-*   **忘记关键参数**：在最初的版本中，`stats` 和 `host` 接口的封装甚至忘记了传递最核心的 `apikey`，导致请求必然失败。
-*   **代码冗长**：早期的函数设计包含了大量重复的代码，不易维护，后来通过 `**kwargs` 等方式进行了大幅精简。
-*   **项目结构错误**：我曾因为不正确的打包配置，导致用户在安装后无法正常 `import` 包，这是打包过程中最经典的错误之一。
-*   **元数据缺失**：在项目配置中，一度漏掉了作者、主页、许可证等重要的元数据信息，让项目看起来很不专业。
-
-正是因为有了这些经历，我深知这个项目依然有许多可以改进的地方。因此，我真诚地欢迎并鼓励每一位使用者：
-
-**如果您在使用中遇到任何 Bug、发现文档有不清晰之处，或者有任何功能上的建议，都请不要犹豫，通过项目的 [GitHub Issues](https://github.com/SyYhunfhds-s-House/python-fofa-sy/issues) 页面告诉我。**
-
-您的每一个 Issue 对我来说都是极其宝贵的反馈，是帮助我这个新手不断进步、完善我第一个开源项目的最大动力。
-
-再次感谢您的支持！
 
 ***
 
@@ -125,7 +100,6 @@ client = Fofa(key: str, api: str = "https://fofa.info", timeout: int = 30, **kwa
 
 -   `key` (str): **必需**。您的 FOFA 账户 API 密钥。
 -   `api` (str): 可选。FOFA API 的根地址，默认为官方地址。如果您有私有化部署，请修改此项。
--   ~~`timeout` (int): 可选。全局默认的请求超时时间（秒），默认为 30 秒。~~
 
 #### 3.2. 查询方法
 
@@ -237,21 +211,6 @@ print(assets['protocol'])
 ```
 **注意**: 表格操作（如 `len()`）和导出方法（`.to_csv()`）在 `stats` 和 `host` 模式下行为不可用。
 
-***
-
-## 项目目前存在的问题
-
-### 潜在的BUG
-- `search`接口中返回值字段列表和返回值实际有的字段可能不一致
-- `pyproject.toml`配置不全导致发布之后缺失个人联系信息
-
-### 未实现的功能
-- 国际化支持(使用gettext库实现, 暂未完成)
-    1. 检查日志信息, 补充调试语句, 为国际化支持完善文本库
-
-
-### 未完成的功能
-
 *** 
 ## 项目依赖
 - loguru, 日志库(可选)
@@ -260,6 +219,9 @@ print(assets['protocol'])
 - tablib, 表格数据处理库
 - tablib[all], tablib的拓展版, 支持导入导出多种格式 (可选)
 - requests, HTTP客户端
+
+## 项目API介绍
+TODO: 完善API文档, 包括参数说明和返回值示例等
 
 ## 项目结构
 - main.py, 主程序入口
@@ -323,81 +285,6 @@ print(assets['protocol'])
     - en_US, 英文
     - zh_CN, 中文
 - tests, 测试目录
-
-
-
-## fofaAPI规划
-- Fofa, 主类
-    - *API字段* (以单下划线开头的约定为私有字段; 无特殊注明的均为成员字段而非函数内定义的字段)
-        - *API配置字段* :
-            - `_api`, 私有字段，API接口地址, 默认值为`https://fofa.info`, 可接受外部初始化
-            - `_apikey`, 私有字段，API密钥, 必须接受外部初始化
-            - `_search_api`, 私有字段，查询接口, 默认值为`/api/v1/search/all`, 如果`_api`不为官方API则该字段不会被使用(若强行使用则将报错`NotImplementedError`)
-                - `_search_url`, 私有字段，查询接口URL, 由`_api + _query_api`生成
-
-            - `_stat_api`, 私有字段，统计聚合接口, 默认值为`/api/v1/search/stats`, 如果`_api`不为官方API则该字段不会被使用
-                - `_stat_url`, 私有字段，统计聚合接口URL, 由`_api + _stat_api`生成
-
-            - `_host_api`, 私有字段，Host聚合接口, 默认值为`/api/v1/host/{host}`, 如果`_api`不为官方API则该字段不会被使用
-                - `_host_url`, 私有字段，Host聚合接口URL, 由`_api + _host_api.format(host=host)`生成
-
-        - *API查询字段* :
-            - *函数作用域字段* :
-                - `_query_dict`, 私有字段，查询字典, 可选接受外部初始化
-                - `_query_string`, 私有字段，查询字符串, 可选接受外部传参(默认值为空字符串，若为空，则由`_query_dict`生成)(若两个参数都为空，则抛出报错)
-                - `_size`, 私有字段，查询结果数量, 可选接受外部传参(默认值为10000)
-                - `_page`, 私有字段，查询结果页码, 可选接受外部传参(默认值为1)
-                - `_fields : list[str]`, 私有字段，查询结果字段, 可选接受外部传参(默认值为`['ip', 'server', 'os', 'link']`)
-                - `_full : bool`, 私有字段，是否查询全部的数据, 可选接受外部传参(默认值为`False`，即默认查询一年内的数据)
-        - *模块配置字段* :
-            - `_enable_log`, 私有字段，是否启用日志, 可选接受外部初始化(默认值为`False`)(使用loguru实现)
-                - `enable_colorful_log`, 私有字段，是否启用彩色日志, 可选接受外部初始化(默认值为`False`)(使用colorama实现)
-            - `_enable_cache`, 私有字段，是否启用缓存, 可选接受外部初始化(默认值为`False`)(使用cachetools实现)
-            - `_enable_format`, 私有字段，是否启用自动格式化查询结果, 可选接受外部初始化(默认值为`True`)(使用`agate`实现)
-        - *公共字段* :
-            - `columns`, 查询结果字段, 类型为`pylist`, 包含查询结果的列名(即`_fields`)
-            - `results`, 查询结果, 类型为`pydict`, 包含查询结果的所有字段(FOFA查询返回的原始dict)
-            - `assets`, 格式化为`tablib.Dataset`的资产对象, 包含查询结果的列名和数据(即`_format_result_dict()`的返回值)
-
-
-    - *API公共方法*
-        - `fofa()`, 公共方法, 封装`__init__()`, 返回值为Fofa类实例; `__init__()`也会保留, 所以会有两种操作初始化一个fofa实例, 即`Fofa()`和`Fofa.fofa()`, 两者等价
-        - `search()`, 公共方法, 查询(接口)数据并返回`_format_result_dict()`格式化后的结果
-        - `stat()`, 公共方法, 查询(统计聚合)数据并返回`_format_result_dict()`格式化后的结果
-        - `host()`, 公共方法, 查询(Host聚合)数据并返回`_format_result_dict()`格式化后的结果
-        - 重写`__getattr__()`, 特殊方法, 若查询结果中包含`fields`中的字段，则可以直接使用`instance.field_name`的方式访问查询结果中的数据
-        - 重写`__getitem__()`, 特殊方法, 若查询结果中包含`fields`中的字段，则可以直接使用`instance['field_name']`的方式访问查询结果中的数据
-        - 重写`__add__()`, 特殊方法, 需要临时向查询结果中添加一个列时，使用`instance + appended_column_header`的方式添加, 返回的是查询结果而非整个实例
-        - 重写`__del__()`, 特殊方法, 若查询结果中包含`fields`中的字段，则可以直接使用`del instance.field_name`的方式删除查询结果中的数据( 直接删一个列包括里面的数据)
-        - 重写`__sub__()`, 特殊方法, 需要临时从查询结果中删除一个列时，使用`instance - deleted_column_header`的方式删除, 返回的是查询结果而非整个实例
-        - 重写`__repr__()`, 特殊方法，返回值为`<host={host} server={server} ...>`
-        - `to_formatted_text()`, 公共方法, 将查询结果格式化为文本并返回
-        - `to_csv()`, 公共方法, 将查询结果格式化为CSV并返回; 对应地会有`from_csv()`方法, 用于将CSV格式的字符串转换为查询结果字典
-        - `to_json()`, 公共方法, 将查询结果格式化为JSON并返回`; 对应地会有`from_json()`方法, 用于将JSON格式的字符串转换为查询结果字典
-        - `to_xlsx()`, 公共方法, 将查询结果格式化为XLSX并返回; 对应地会有`from_xlsx()`方法, 用于将XLSX格式的字符串转换为查询结果字典
-        - *格式化数据后的公共方法*:
-            - 根据`fields`中的字段，可以直接使用`instance.ip`的方式访问查询结果中的(IP地址)数据, 返回值类型为`pylist`
-            - 根据`fields`中的字段，可以直接使用`instance['ip']`的方式访问查询结果中的(IP地址)数据, 返回值类型为`pylist`
-
-    - *API私有方法*
-        - *查询数据格式化* :
-            - `_format_query_dict()`, 私有方法, 从`_query_dict`中取出查询字典并格式化, 返回值为base64编码接UTF8解码的字符串
-        - *返回数据自动格式化* :
-            - `_format_result_dict()`, 私有方法, 从返回的JSON数据中取出查询结果并格式化, 返回值为字典
-
-- Fofa.exception, 异常模块
-    - *对接的FOFA的API子模块附属异常* : `Fofa.api.exception`; 会自动加上`Fofa`前缀, 表示继承自对应的异常类
-        - *API配置导致的异常* :
-            - EmptyKeyError, 异常类, 当API密钥为空时抛出, 继承自ValueError
-            - NonOfficialAPIError, 异常类, 当使用的不是官方API但尝试使用官方接口时抛出, 继承自NotImplementedError
-        - *API查询时可能有的异常* :
-            - LowAllowmentWarning, 异常类, 当可用额度为1时抛出, 继承自Warning
-            - EmptyAllowmentError, 异常类, 当可用额度为0时抛出, 继承自ValueError
-            - EmptyResultsWarning, 异常类, 当查询结果为空时抛出, 继承自Warning
-            - ConnectionError, 异常类, 当连接API时出错时抛出, 继承自httpx.ConnectionError或requets.ConnectionError
-            - SyntaxError, 异常类, 当查询语法错误时抛出, 继承自SyntaxError
-
-    - *utility套具子模块附属异常* : `Fofa.util.exception`
 
 ***
 ## 项目开源证书
