@@ -8,38 +8,39 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-07-31 13:29+0800\n"
-"PO-Revision-Date: 2025-07-31 13:32+0800\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: zh_Hans_CN\n"
+"PO-Revision-Date: 2025-08-01 11:27+0800\n"
+"Last-Translator: \n"
 "Language-Team: zh_Hans_CN <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.14.0\n"
+"X-Generator: Poedit 3.6\n"
 
 #: src/fofa_py/factory.py:241 src/fofa_py/factory.py:387
 msgid ""
-"The query dict is empty,                         which prevents the query"
-" from being executed"
+"The query dict is empty,                         which prevents the query from "
+"being executed"
 msgstr "查询字典为空, 无法构造查询字符串进而无法进行查询"
 
-#: src/fofa_py/factory.py:276 src/fofa_py/factory.py:413
-#: src/fofa_py/factory.py:506
+#: src/fofa_py/factory.py:276 src/fofa_py/factory.py:413 src/fofa_py/factory.py:506
 msgid ""
-"cache hit: {assets}, mode: {mode}, at: {at}, query: {query}."
-"                     asset query step will be skipped"
-msgstr "命中缓存: {assets}, 原扫描模式为: {mode}, 扫描完成于: {at}, 当时的查询字符串为: {query}。程序将跳过联网请求步骤"
+"cache hit: {assets}, mode: {mode}, at: {at}, query: {query}.                     "
+"asset query step will be skipped"
+msgstr ""
+"命中缓存: {assets}, 原扫描模式为: {mode}, 扫描完成于: {at}, 当时的查询字符串为: "
+"{query}。程序将跳过联网请求步骤"
 
-#: src/fofa_py/factory.py:281 src/fofa_py/factory.py:418
-#: src/fofa_py/factory.py:511
+#: src/fofa_py/factory.py:281 src/fofa_py/factory.py:418 src/fofa_py/factory.py:511
 msgid "cache miss: {error}, hash: {hash}. asset query steps will be performed"
 msgstr "未检索到{error}哈希值的缓存, 使用的哈希为: {hash}。程序将联网获取资产数据"
 
 #: src/fofa_py/factory.py:292
 msgid ""
-"Executing search with query string: {query_string},"
-"                         fields: {fields}"
+"Executing search with query string: {query_string},                         "
+"fields: {fields}"
 msgstr "正在执行查询内容为{query_string}的常规查询, 期待的返回值字段为{fields}"
 
 #: src/fofa_py/factory.py:304
@@ -52,8 +53,8 @@ msgstr "已将{size}条资产格式化为FofaAssets资产容器示例"
 
 #: src/fofa_py/factory.py:424
 msgid ""
-"Executing stats with query_string: {query_string},"
-"                         fields: {fields}"
+"Executing stats with query_string: {query_string},                         "
+"fields: {fields}"
 msgstr "正在执行查询内容为{query_string}的统计聚合查询, 期待的返回值字段为{fields}"
 
 #: src/fofa_py/factory.py:437
@@ -80,11 +81,10 @@ msgstr "Host聚合接口的资产数据已成功格式化为FofaAssets容器实�
 msgid "Invalid format mode"
 msgstr "不正确的格式化模式, 请检查设置的key"
 
-#: src/fofa_py/factory.py:762 src/fofa_py/factory.py:769
-#: src/fofa_py/factory.py:776
+#: src/fofa_py/factory.py:762 src/fofa_py/factory.py:769 src/fofa_py/factory.py:776
 msgid ""
-"Please install tablib[all] to                 obtain support for "
-"additional extension formats"
+"Please install tablib[all] to                 obtain support for additional "
+"extension formats"
 msgstr "请安装tablib[all]库以获取导出支持"
 
 #: src/fofa_py/basic/etc.py:321
@@ -116,4 +116,3 @@ msgstr "Fofa资产查询失败, 接口返回的报错消息为 {}"
 #: src/fofa_py/util/query.py:432
 msgid "No assets matching the criteria were found"
 msgstr "未找到符合条件的资产"
-

@@ -8,7 +8,23 @@ import tablib # 这里会蜜汁报错导入不了包(VSC经典静态检查老毛
 try:
     import gettext
     # 尝试导入gettext模块, 如果成功则使用它来处理国际化
-    _ = gettext.gettext
+    import locale
+    from pathlib import Path
+    # 设置locale为当前系统的语言环境
+    locale.setlocale(locale.LC_ALL, '')
+    
+    # 获取项目根目录
+    project_root = Path(__file__).resolve().parents[3]
+    locale_dir = project_root / 'locales'
+    # 设置gettext的locale目录
+    gettext.bindtextdomain('fofa_py_src', locale_dir)
+    gettext.textdomain('fofa_py_src')
+    # 绑定翻译
+    lang = gettext.translation(
+        'messages', localedir=locale_dir, languages=[locale.getdefaultlocale()[0]]
+    )
+    lang.install()
+    _ = lang.gettext  # 使用翻译函数替换默认的gettext
 except ImportError:
     _ = lambda s: s # 接收参数但什么也不干
 
